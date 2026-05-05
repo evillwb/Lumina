@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from './lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -60,6 +61,7 @@ export default function App() {
             {activeTab === 'Store & Quests' && <StoreQuests />}
             {activeTab === 'Settings' && <Settings />}
           </div>
+          <SpeedInsights />
         </AuthProvider>
       </PreferencesProvider>
     </ThemeProvider>
