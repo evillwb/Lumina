@@ -1,0 +1,150 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+
+    // Core Helpers
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- Entity Validators ---
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email', 'createdAt', 'updatedAt']) 
+        && data.keys().size() >= 4
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 && data.userId == request.auth.uid
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 256
+        && ( !('streak' in data) || (data.streak is number && data.streak >= 0 && data.streak <= 100000) )
+        && ( !('credits' in data) || (data.credits is number && data.credits >= 0 && data.credits <= 100000000) )
+        && ( !('purchasedThemes' in data) || (data.purchasedThemes is list && data.purchasedThemes.size() <= 100) )
+        && ( !('activePremiumTheme' in data) || (data.activePremiumTheme is string && data.activePremiumTheme.size() <= 100) )
+        && ( !('lastClaimedDaily' in data) || (data.lastClaimedDaily is string && data.lastClaimedDaily.size() <= 100) )
+        && ( !('petFood' in data) || (data.petFood is number && data.petFood >= 0 && data.petFood <= 100000000) )
+        && ( !('petWater' in data) || (data.petWater is number && data.petWater >= 0 && data.petWater <= 100000000) )
+        && ( !('myPets' in data) || (data.myPets is list && data.myPets.size() <= 100) )
+        && ( !('activePet' in data) || (data.activePet is map) )
+        && ( !('lastPetDecayDate' in data) || (data.lastPetDecayDate is string && data.lastPetDecayDate.size() <= 100) )
+        && ( !('timezone' in data) || (data.timezone is string && data.timezone.size() <= 100) )
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidUserUpdate(data, existingData) {
+      return data.userId == existingData.userId 
+        && data.email == existingData.email 
+        && data.createdAt == existingData.createdAt 
+        && data.updatedAt == request.time 
+        && ( !('streak' in data) || (data.streak is number && data.streak >= 0 && data.streak <= 100000) )
+        && ( !('credits' in data) || (data.credits is number && data.credits >= 0 && data.credits <= 100000000) )
+        && ( !('purchasedThemes' in data) || (data.purchasedThemes is list && data.purchasedThemes.size() <= 100) )
+        && ( !('activePremiumTheme' in data) || (data.activePremiumTheme is string && data.activePremiumTheme.size() <= 100) )
+        && ( !('lastClaimedDaily' in data) || (data.lastClaimedDaily is string && data.lastClaimedDaily.size() <= 100) )
+        && ( !('petFood' in data) || (data.petFood is number && data.petFood >= 0 && data.petFood <= 100000000) )
+        && ( !('petWater' in data) || (data.petWater is number && data.petWater >= 0 && data.petWater <= 100000000) )
+        && ( !('myPets' in data) || (data.myPets is list && data.myPets.size() <= 100) )
+        && ( !('activePet' in data) || (data.activePet is map) )
+        && ( !('lastPetDecayDate' in data) || (data.lastPetDecayDate is string && data.lastPetDecayDate.size() <= 100) )
+        && ( !('timezone' in data) || (data.timezone is string && data.timezone.size() <= 100) );
+    }
+
+    function isValidTopic(data, userId) {
+      return data.keys().hasAll(['userId', 'title', 'subject', 'masteryLevel', 'createdAt', 'updatedAt'])
+        && data.userId == userId
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
+        && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidTopicUpdate(data, existingData) {
+      return data.userId == existingData.userId
+        && data.createdAt == existingData.createdAt
+        && data.updatedAt == request.time
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
+        && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100;
+    }
+
+    function isValidScheduleBlock(data, userId) {
+      return data.keys().hasAll(['userId', 'topicId', 'title', 'day', 'startTime', 'endTime', 'status', 'createdAt', 'updatedAt'])
+        && data.userId == userId
+        && data.topicId is string && data.topicId.size() > 0 && data.topicId.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.day is string && data.day.size() > 0 && data.day.size() <= 20
+        && data.startTime is string && data.startTime.size() > 0 && data.startTime.size() <= 20
+        && data.endTime is string && data.endTime.size() > 0 && data.endTime.size() <= 20
+        && data.status is string && data.status.size() > 0 && data.status.size() <= 20
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidScheduleBlockUpdate(data, existingData) {
+      return data.userId == existingData.userId
+        && data.topicId == existingData.topicId
+        && data.createdAt == existingData.createdAt
+        && data.updatedAt == request.time
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.day is string && data.day.size() > 0 && data.day.size() <= 20
+        && data.startTime is string && data.startTime.size() > 0 && data.startTime.size() <= 20
+        && data.endTime is string && data.endTime.size() > 0 && data.endTime.size() <= 20
+        && data.status is string && data.status.size() > 0 && data.status.size() <= 20;
+    }
+
+    function isValidQuizLog(data, userId) {
+      return data.keys().hasAll(['userId', 'topicId', 'blockId', 'question', 'userAnswer', 'isCorrect', 'createdAt'])
+        && data.userId == userId
+        && data.topicId is string && data.topicId.size() > 0 && data.topicId.size() <= 128
+        && data.blockId is string && data.blockId.size() > 0 && data.blockId.size() <= 128
+        && data.question is string && data.question.size() > 0 && data.question.size() <= 1000
+        && data.userAnswer is string && data.userAnswer.size() <= 500
+        && data.isCorrect is bool
+        && data.createdAt == request.time;
+    }
+
+    // --- Collections ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastActiveDate', 'updatedAt', 'credits', 'purchasedThemes', 'activePremiumTheme', 'lastClaimedDaily', 'petFood', 'petWater', 'myPets', 'activePet', 'lastPetDecayDate', 'timezone']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+      
+      // We do not have any list method for users since users only read their own profile directly
+
+      match /topics/{topicId} {
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopic(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopicUpdate(incoming(), existing()) && 
+          incoming().diff(existing()).affectedKeys().hasAny(['title', 'subject', 'presetId', 'notes', 'masteryLevel', 'lastReviewed', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
+      }
+
+      match /scheduleBlocks/{blockId} {
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(blockId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(blockId) && isValidScheduleBlock(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(blockId) && isValidScheduleBlockUpdate(incoming(), existing()) &&
+          incoming().diff(existing()).affectedKeys().hasAny(['title', 'day', 'startTime', 'endTime', 'status', 'isReview', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(blockId);
+      }
+
+      match /quizLogs/{logId} {
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(logId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(logId) && isValidQuizLog(incoming(), userId);
+        // Immutable collection, no updates
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(logId);
+      }
+    }
+  }
+}

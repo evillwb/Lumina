@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+html[data-premium-theme="neon-blue"] body {
+  @apply bg-blue-950 text-white;
+}
+html[data-premium-theme="neon-blue"] .bg-white, html[data-premium-theme="neon-blue"] .dark\:bg-\[\#09090b\], html[data-premium-theme="neon-blue"] .dark\:bg-neutral-900 {
+  @apply !bg-blue-900/50 !border-blue-800 !text-blue-100;
+}
+
+html[data-premium-theme="hacker-green"] body {
+  @apply bg-[#001100] text-green-400;
+}
+html[data-premium-theme="hacker-green"] .bg-white, html[data-premium-theme="hacker-green"] .dark\:bg-\[\#09090b\], html[data-premium-theme="hacker-green"] .dark\:bg-neutral-900 {
+  @apply !bg-green-900/20 !border-green-900/50 !text-green-300;
+}
+
+html[data-premium-theme="sunset-orange"] body {
+  @apply bg-orange-950 text-orange-200;
+}
+html[data-premium-theme="sunset-orange"] .bg-white, html[data-premium-theme="sunset-orange"] .dark\:bg-\[\#09090b\], html[data-premium-theme="sunset-orange"] .dark\:bg-neutral-900 {
+  @apply !bg-orange-900/40 !border-orange-800/50 !text-orange-100;
+}
+
+html[data-premium-theme="dracula-purple"] body {
+  @apply bg-purple-950 text-purple-200;
+}
+html[data-premium-theme="dracula-purple"] .bg-white, html[data-premium-theme="dracula-purple"] .dark\:bg-\[\#09090b\], html[data-premium-theme="dracula-purple"] .dark\:bg-neutral-900 {
+  @apply !bg-purple-900/40 !border-purple-800/50 !text-purple-100;
+}
+
+html[data-premium-theme="cherry-blossom"] body {
+  @apply bg-pink-950 text-pink-200;
+}
+html[data-premium-theme="cherry-blossom"] .bg-white, html[data-premium-theme="cherry-blossom"] .dark\:bg-\[\#09090b\], html[data-premium-theme="cherry-blossom"] .dark\:bg-neutral-900 {
+  @apply !bg-pink-900/40 !border-pink-800/50 !text-pink-100;
+}
+
+html[data-premium-theme="cyberpunk-yellow"] body {
+  @apply bg-yellow-950 text-yellow-200;
+}
+html[data-premium-theme="cyberpunk-yellow"] .bg-white, html[data-premium-theme="cyberpunk-yellow"] .dark\:bg-\[\#09090b\], html[data-premium-theme="cyberpunk-yellow"] .dark\:bg-neutral-900 {
+  @apply !bg-yellow-900/40 !border-yellow-800/50 !text-yellow-100;
+}
+
+html[data-premium-theme="royal-gold"] body {
+  @apply bg-amber-950 text-amber-200;
+}
+html[data-premium-theme="royal-gold"] .bg-white, html[data-premium-theme="royal-gold"] .dark\:bg-\[\#09090b\], html[data-premium-theme="royal-gold"] .dark\:bg-neutral-900 {
+  @apply !bg-amber-900/40 !border-amber-800/50 !text-amber-100;
+}
+
+html[data-premium-theme="synthwave-magenta"] body {
+  @apply bg-fuchsia-950 text-fuchsia-200;
+}
+html[data-premium-theme="synthwave-magenta"] .bg-white, html[data-premium-theme="synthwave-magenta"] .dark\:bg-\[\#09090b\], html[data-premium-theme="synthwave-magenta"] .dark\:bg-neutral-900 {
+  @apply !bg-fuchsia-900/40 !border-fuchsia-800/50 !text-fuchsia-100;
+}
+
+html[data-premium-theme="gold-and-black"] body {
+  @apply bg-black text-amber-200;
+}
+html[data-premium-theme="gold-and-black"] .bg-white, html[data-premium-theme="gold-and-black"] .dark\:bg-\[\#09090b\], html[data-premium-theme="gold-and-black"] .dark\:bg-neutral-900 {
+  @apply !bg-amber-900/10 !border-amber-600/50 !text-amber-100;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-neutral-50 dark:bg-[#09090b] text-neutral-900 dark:text-neutral-200 antialiased;
+  }
+
+  /* Custom Scrollbar for Theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300 dark:bg-neutral-800 rounded-full hover:bg-neutral-400 dark:hover:bg-neutral-700 transition-colors;
+  }
+}

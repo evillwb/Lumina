@@ -1,0 +1,6 @@
+{
+  "name": "Lumina",
+  "description": "A smart knowledge manager that reschedules study topics based on micro-quiz performance, bringing light and clarity to confusing subjects. Supporting SDG 4: Quality Education.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

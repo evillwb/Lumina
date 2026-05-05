@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with streak and basic stats",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "streak": { "type": "integer" },
+        "lastActiveDate": { "type": "string" },
+        "credits": { "type": "integer" },
+        "purchasedThemes": { "type": "array", "items": { "type": "string" } },
+        "activePremiumTheme": { "type": "string" },
+        "createdAt": { "type": "string", "description": "Timestamp" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["userId", "email", "streak", "createdAt", "updatedAt"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A study topic in the user's syllabus",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "presetId": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "notes": { "type": "string" },
+        "masteryLevel": { "type": "integer" },
+        "lastReviewed": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "title", "subject", "masteryLevel", "createdAt", "updatedAt"]
+    },
+    "ScheduleBlock": {
+      "title": "ScheduleBlock",
+      "description": "A scheduled study session for a topic",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "topicId": { "type": "string" },
+        "title": { "type": "string" },
+        "day": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "status": { "type": "string" },
+        "isReview": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "topicId", "title", "day", "startTime", "endTime", "status", "createdAt", "updatedAt"]
+    },
+    "QuizLog": {
+      "title": "QuizLog",
+      "description": "Result of a study micro-quiz",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "topicId": { "type": "string" },
+        "blockId": { "type": "string" },
+        "question": { "type": "string" },
+        "userAnswer": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "topicId", "blockId", "question", "userAnswer", "isCorrect", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/users/{userId}/topics/{topicId}": {
+      "schema": { "$ref": "#/entities/Topic" },
+      "description": "User's study topics"
+    },
+    "/users/{userId}/scheduleBlocks/{blockId}": {
+      "schema": { "$ref": "#/entities/ScheduleBlock" },
+      "description": "User's schedule blocks"
+    },
+    "/users/{userId}/quizLogs/{logId}": {
+      "schema": { "$ref": "#/entities/QuizLog" },
+      "description": "User's quiz logs"
+    }
+  }
+}

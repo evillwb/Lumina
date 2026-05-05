@@ -1,0 +1,320 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collection, doc, setDoc, deleteDoc, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
+import { Topic, PRESET_SUBJECTS, ScheduleBlock, DAYS, STUDY_HOURS, DayOfWeek } from '../types';
+import { Plus, Trash2, Edit2, X, Check, Search, CalendarPlus } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import MDEditor from '@uiw/react-md-editor';
+import { useTheme } from '../contexts/ThemeContext';
+
+export const SyllabusManager: React.FC = () => {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Form states
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState(PRESET_SUBJECTS[0]);
+  const [notes, setNotes] = useState('');
+  const [priority, setPriority] = useState<string>('normal');
+
+  const fetchTopics = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const q = collection(db, 'users', user.uid, 'topics');
+      const snap = await getDocs(q);
+      setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() } as Topic)));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopics();
+  }, [user]);
+
+  const saveTopic = async () => {
+    if (!user || !title.trim()) return;
+    try {
+      const isNew = !isEditing;
+      const topicId = isEditing || uuidv4();
+      const ref = doc(db, 'users', user.uid, 'topics', topicId);
+      
+      const topicData: any = {
+        userId: user.uid,
+        title,
+        subject,
+        notes,
+        priority,
+        masteryLevel: isNew ? 0 : topics.find(t => t.id === isEditing)?.masteryLevel || 0,
+        updatedAt: serverTimestamp(),
+      };
+      
+      // Strict keys check enforcement, createdAt cannot be updated
+      if (isNew) {
+        topicData.createdAt = serverTimestamp();
+        // Since we are validating keys perfectly
+      } else {
+        const existing = await getDoc(ref);
+        if (existing.exists()) {
+           topicData.createdAt = existing.data().createdAt; // keep immutable
+        }
+      }
+
+      await setDoc(ref, topicData, { merge: true });
+      
+      resetForm();
+      fetchTopics();
+    } catch (e) {
+      handleFirestoreError(e, OperationType.WRITE, 'topics');
+    }
+  };
+
+  const deleteTopic = async (id: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'topics', id));
+      setTopics(topics.filter(t => t.id !== id));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.DELETE, `topics/${id}`);
+    }
+  };
+
+  const startEdit = (t: Topic) => {
+    setIsEditing(t.id);
+    setTitle(t.title);
+    setSubject(t.subject);
+    setNotes(t.notes || '');
+    setPriority(t.priority || 'normal');
+  };
+
+  const resetForm = () => {
+    setIsEditing(null);
+    setTitle('');
+    setSubject(PRESET_SUBJECTS[0]);
+    setNotes('');
+    setPriority('normal');
+  };
+
+  const generateSchedule = async () => {
+    if (!user || topics.length === 0) return alert("Add topics first!");
+    
+    try {
+      const batchRef = collection(db, 'users', user.uid, 'scheduleBlocks');
+      const oldBlocks = await getDocs(batchRef);
+      for (const d of oldBlocks.docs) {
+        await deleteDoc(doc(db, 'users', user.uid, 'scheduleBlocks', d.id));
+      }
+
+      let currentDate = new Date();
+      // Start generating from tomorrow to give them time
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      let currentHour = STUDY_HOURS.start; // 14
+      
+      const priorityMap: Record<string, number> = { 'emergency': 3, 'normal': 2, 'low': 1 };
+      const sortedTopics = [...topics].sort((a,b) => (priorityMap[b.priority || 'normal'] || 2) - (priorityMap[a.priority || 'normal'] || 2));
+
+      for (const topic of sortedTopics) {
+        const startStr = `${currentHour.toString().padStart(2, '0')}:00`;
+        let nextHour = currentHour + 2;
+        const endStr = nextHour === 24 ? '23:59' : `${nextHour.toString().padStart(2, '0')}:00`;
+
+        const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        const blockId = uuidv4();
+        await setDoc(doc(batchRef, blockId), {
+          id: blockId,
+          userId: user.uid,
+          topicId: topic.id,
+          title: topic.title,
+          day: dateString, // Storing as date string instead of abstract day
+          startTime: startStr,
+          endTime: endStr,
+          status: 'upcoming',
+          isReview: false,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        currentHour += 2;
+        if (currentHour > STUDY_HOURS.end) {
+          currentHour = STUDY_HOURS.start;
+          currentDate.setDate(currentDate.getDate() + 1); // Move to next day
+        }
+      }
+      alert("Calendar generated successfully!");
+    } catch (e) {
+       handleFirestoreError(e, OperationType.WRITE, 'scheduleBlocks');
+    }
+  };
+
+  if (loading) return <div className="p-8 text-neutral-400">Loading...</div>;
+
+  if (!user) {
+    return (
+      <div className="flex-1 p-8 flex items-center justify-center flex-col text-center">
+          <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Authentication Required</h2>
+          <p className="text-neutral-500 dark:text-neutral-400">Please sign in with Google from the sidebar to manage your syllabus.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 p-6 md:p-8 overflow-y-auto w-full max-w-5xl mx-auto">
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white tracking-tight">My Syllabus</h1>
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">Manage topics and personal notes for AI quiz generation.</p>
+        </div>
+        <button 
+          onClick={generateSchedule}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20"
+        >
+          <CalendarPlus className="w-4 h-4" />
+          Regenerate Schedule
+        </button>
+      </header>
+
+      {/* Form */}
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 mb-8">
+        <h3 className="text-neutral-900 dark:text-white font-medium mb-4">{isEditing ? 'Edit Topic' : 'Add New Topic'}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Topic Title</label>
+            <input 
+              value={title} onChange={(e) => setTitle(e.target.value)}
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500" 
+              placeholder="e.g. Thermodynamics"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Preset Subject</label>
+            <select 
+              value={subject} onChange={(e) => {
+                setSubject(e.target.value);
+                if (!title.trim() && e.target.value !== 'Custom') {
+                   setTitle(`${e.target.value} Basics`);
+                }
+              }}
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              {PRESET_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Priority</label>
+            <select 
+              value={priority} onChange={(e) => setPriority(e.target.value)}
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="low">Low Priority</option>
+              <option value="normal">Normal</option>
+              <option value="emergency">Emergency (Exam Next Week!)</option>
+            </select>
+          </div>
+        </div>
+        
+        {subject === 'Custom' && (
+           <div className="mb-4">
+             <input 
+                placeholder="Custom Subject Name" 
+                className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm" 
+                onChange={(e) => setSubject(e.target.value)}
+              />
+           </div>
+        )}
+
+        <div className="mb-4" data-color-mode={theme === 'dark' ? 'dark' : 'light'}>
+          <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">My Notes (Refines AI Questions)</label>
+          <MDEditor 
+            value={notes} 
+            onChange={(val) => setNotes(val || '')}
+            preview="edit"
+            height={200}
+            className="w-full rounded-lg text-sm"
+            textareaProps={{
+              placeholder: "Key concepts, formulas, or reminders... e.g. Entropy always increases."
+            }}
+          />
+        </div>
+
+        <div className="flex justify-end gap-3">
+          {isEditing && <button onClick={resetForm} className="px-4 py-2 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors">Cancel</button>}
+          <button 
+            onClick={saveTopic}
+            disabled={!title.trim()}
+            className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+          >
+            {isEditing ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {isEditing ? 'Save Topic' : 'Add Topic'}
+          </button>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {topicToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-xl max-w-sm w-full border border-neutral-200 dark:border-neutral-800">
+            <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">Delete Topic?</h3>
+            <p className="text-neutral-500 dark:text-neutral-400 mb-6 text-sm">Are you sure you want to delete this topic? This action cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setTopicToDelete(null)} 
+                className="px-4 py-2 text-neutral-500 hover:text-neutral-800 dark:hover:text-white font-medium text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => { deleteTopic(topicToDelete); setTopicToDelete(null); }} 
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium text-sm transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      <div className="space-y-3">
+        {topics.map(t => (
+          <div key={t.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 justify-between items-center flex rounded-xl shadow-sm">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                 <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">{t.subject}</span>
+                 {t.priority === 'emergency' && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Emergency</span>}
+                 {t.priority === 'low' && <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Low</span>}
+              </div>
+              <h3 className="text-neutral-900 dark:text-white font-medium">{t.title}</h3>
+              {t.notes && <p className="text-neutral-500 text-xs mt-1 truncate max-w-md">{t.notes}</p>}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => startEdit(t)} className="p-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-lg transition-colors">
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button onClick={() => setTopicToDelete(t.id)} className="p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {topics.length === 0 && (
+          <div className="py-12 text-center text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
+            No topics yet. Start building your syllabus!
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
