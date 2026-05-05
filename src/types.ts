@@ -38,6 +38,7 @@ export interface Topic {
   subject: string;
   notes?: string;
   priority?: TopicPriority;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   masteryLevel: number;
   failedAttempts?: number;
   lastReviewed?: string; // ISO string

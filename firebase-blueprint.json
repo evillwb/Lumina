@@ -38,6 +38,7 @@
         "subject": { "type": "string" },
         "notes": { "type": "string" },
         "masteryLevel": { "type": "integer" },
+        "difficulty": { "type": "string" },
         "lastReviewed": { "type": "string" },
         "createdAt": { "type": "string" },
         "updatedAt": { "type": "string" }

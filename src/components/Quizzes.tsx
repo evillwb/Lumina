@@ -434,7 +434,6 @@ export const Quizzes: React.FC = () => {
                                       setQuizFiles(Array.from(e.target.files));
                                   }
                                }} 
-                               accept="application/pdf,text/plain"
                                multiple
                              />
                            </label>

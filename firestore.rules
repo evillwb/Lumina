@@ -68,6 +68,7 @@ service cloud.firestore {
         && data.title is string && data.title.size() > 0 && data.title.size() <= 200
         && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
         && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100
+        && ( !('difficulty' in data) || (data.difficulty is string && data.difficulty.size() <= 50) )
         && data.createdAt == request.time
         && data.updatedAt == request.time;
     }
@@ -78,7 +79,8 @@ service cloud.firestore {
         && data.updatedAt == request.time
         && data.title is string && data.title.size() > 0 && data.title.size() <= 200
         && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
-        && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100;
+        && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100
+        && ( !('difficulty' in data) || (data.difficulty is string && data.difficulty.size() <= 50) );
     }
 
     function isValidScheduleBlock(data, userId) {
@@ -131,7 +133,7 @@ service cloud.firestore {
         allow get: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopic(incoming(), userId);
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopicUpdate(incoming(), existing()) && 
-          incoming().diff(existing()).affectedKeys().hasAny(['title', 'subject', 'presetId', 'notes', 'masteryLevel', 'lastReviewed', 'updatedAt']);
+          incoming().diff(existing()).affectedKeys().hasAny(['title', 'subject', 'presetId', 'notes', 'masteryLevel', 'difficulty', 'lastReviewed', 'updatedAt']);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
       }
 

@@ -21,6 +21,7 @@ export const SyllabusManager: React.FC = () => {
   const [subject, setSubject] = useState(PRESET_SUBJECTS[0]);
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState<string>('normal');
+  const [difficulty, setDifficulty] = useState<Topic['difficulty']>('Beginner');
 
   const fetchTopics = async () => {
     if (!user) {
@@ -55,6 +56,7 @@ export const SyllabusManager: React.FC = () => {
         subject,
         notes,
         priority,
+        difficulty,
         masteryLevel: isNew ? 0 : topics.find(t => t.id === isEditing)?.masteryLevel || 0,
         updatedAt: serverTimestamp(),
       };
@@ -95,6 +97,7 @@ export const SyllabusManager: React.FC = () => {
     setSubject(t.subject);
     setNotes(t.notes || '');
     setPriority(t.priority || 'normal');
+    setDifficulty(t.difficulty || 'Beginner');
   };
 
   const resetForm = () => {
@@ -103,6 +106,7 @@ export const SyllabusManager: React.FC = () => {
     setSubject(PRESET_SUBJECTS[0]);
     setNotes('');
     setPriority('normal');
+    setDifficulty('Beginner');
   };
 
   const generateSchedule = async () => {
@@ -188,7 +192,7 @@ export const SyllabusManager: React.FC = () => {
       {/* Form */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 mb-8">
         <h3 className="text-neutral-900 dark:text-white font-medium mb-4">{isEditing ? 'Edit Topic' : 'Add New Topic'}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Topic Title</label>
             <input 
@@ -210,6 +214,17 @@ export const SyllabusManager: React.FC = () => {
             >
               {PRESET_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
               <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Difficulty</label>
+            <select 
+              value={difficulty} onChange={(e) => setDifficulty(e.target.value as Topic['difficulty'])}
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
             </select>
           </div>
           <div>
@@ -291,8 +306,9 @@ export const SyllabusManager: React.FC = () => {
         {topics.map(t => (
           <div key={t.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 justify-between items-center flex rounded-xl shadow-sm">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                  <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">{t.subject}</span>
+                 {t.difficulty && <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">{t.difficulty}</span>}
                  {t.priority === 'emergency' && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Emergency</span>}
                  {t.priority === 'low' && <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Low</span>}
               </div>
