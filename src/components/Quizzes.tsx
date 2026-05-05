@@ -17,6 +17,7 @@ interface QuizLog {
   userAnswer: string;
   isCorrect: boolean;
   createdAt: any;
+  explanation?: string;
 }
 
 export const Quizzes: React.FC = () => {
@@ -26,7 +27,7 @@ export const Quizzes: React.FC = () => {
   const [logs, setLogs] = useState<QuizLog[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'Take Quiz' | 'History'>('Take Quiz');
+  const [activeTab, setActiveTab] = useState<'Take Quiz' | 'History' | 'Review Mistakes'>('Take Quiz');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const formatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
@@ -40,10 +41,10 @@ export const Quizzes: React.FC = () => {
   const [quizFiles, setQuizFiles] = useState<File[]>([]);
 
   // Active Quiz State
-  const [quizData, setQuizData] = useState<{ question: string; options: string[]; correctAnswer: string }[] | null>(null);
+  const [quizData, setQuizData] = useState<{ question: string; options: string[]; correctAnswer: string; explanation?: string }[] | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [quizResults, setQuizResults] = useState<{ isCorrect: boolean, answer: string, correct: string }[]>([]);
+  const [quizResults, setQuizResults] = useState<{ isCorrect: boolean, answer: string, correct: string; explanation?: string }[]>([]);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [quizFinished, setQuizFinished] = useState(false);
 
@@ -52,6 +53,7 @@ export const Quizzes: React.FC = () => {
   const [bossBattleActive, setBossBattleActive] = useState(false);
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
   const [examModeActive, setExamModeActive] = useState(false);
+  const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -118,6 +120,7 @@ export const Quizzes: React.FC = () => {
     setBossBattleActive(false);
     setExamModeActive(false);
     setTimeLeft(timeLimitSecs > 0 ? timeLimitSecs : null);
+    setShowOnlyIncorrect(false);
 
     try {
       const processedFiles: { mimeType: string, data: string }[] = [];
@@ -154,6 +157,7 @@ export const Quizzes: React.FC = () => {
     setBossBattleActive(true);
     setExamModeActive(false);
     setTimeLeft(null);
+    setShowOnlyIncorrect(false);
 
     try {
       const qArray = await generateQuizQuestions('General Review', 'Boss Battle', `Review these concepts the user got wrong: ${wrongLogs.map(l => l.question).join(' | ')}`, language, [], wrongLogs.length);
@@ -182,6 +186,7 @@ export const Quizzes: React.FC = () => {
     setExamModeActive(true);
     const timeLimit = timeLimitSecs > 0 ? timeLimitSecs : 600; // 10 minutes default if 0
     setTimeLeft(timeLimit);
+    setShowOnlyIncorrect(false);
 
     try {
       const processedFiles: { mimeType: string, data: string }[] = [];
@@ -222,7 +227,8 @@ export const Quizzes: React.FC = () => {
     const newResults = [...quizResults, {
        isCorrect,
        answer: selectedAnswer,
-       correct: currentQ.correctAnswer
+       correct: currentQ.correctAnswer,
+       explanation: currentQ.explanation
     }];
     setQuizResults(newResults);
     
@@ -236,6 +242,7 @@ export const Quizzes: React.FC = () => {
         question: currentQ.question,
         userAnswer: selectedAnswer,
         isCorrect,
+        explanation: currentQ.explanation || null,
         createdAt: serverTimestamp()
       };
       await setDoc(doc(db, 'users', user.uid, 'quizLogs', logId), newLog);
@@ -260,10 +267,17 @@ export const Quizzes: React.FC = () => {
              const uData = uDoc.data();
              let bonus = 0;
              if (uData.activePet) {
-                 if (uData.activePet.id === 2) bonus = 2;
+                 if (uData.activePet.id === 1) bonus = 1;
+                 else if (uData.activePet.id === 2) bonus = 2;
                  else if (uData.activePet.id === 3) bonus = 5;
                  else if (uData.activePet.id === 4) bonus = 10;
                  else if (uData.activePet.id === 5) bonus = 15;
+                 else if (uData.activePet.id === 6) bonus = 20;
+                 else if (uData.activePet.id === 7) bonus = 30;
+                 else if (uData.activePet.id === 8) bonus = 50;
+                 else if (uData.activePet.id === 9) bonus = 70;
+                 else if (uData.activePet.id === 10) bonus = 100;
+                 else if (uData.activePet.id === 11) bonus = 150;
              }
              const tz = uData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
              const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -336,13 +350,13 @@ export const Quizzes: React.FC = () => {
       </header>
 
       <div className="flex space-x-2 mb-6 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl w-max">
-        {['Take Quiz', 'History'].map(tab => (
+        {['Take Quiz', 'History', 'Review Mistakes'].map(tab => (
            <button 
              key={tab}
              onClick={() => setActiveTab(tab as any)}
              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
            >
-             {tab === 'Take Quiz' ? t('take_quiz') : t('history')}
+             {tab === 'Take Quiz' ? t('take_quiz') : tab === 'History' ? t('history') : 'Review Mistakes'}
            </button>
         ))}
       </div>
@@ -528,20 +542,40 @@ export const Quizzes: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                       <h4 className="font-semibold text-neutral-900 dark:text-white">Review your answers:</h4>
-                       {quizResults.map((result, idx) => (
-                          <div key={idx} className={`p-4 rounded-xl border ${result.isCorrect ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200' : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200'}`}>
+                       <div className="flex justify-between items-center">
+                         <h4 className="font-semibold text-neutral-900 dark:text-white">Review your answers:</h4>
+                         {quizResults.some(r => !r.isCorrect) && (
+                           <button
+                             onClick={() => setShowOnlyIncorrect(!showOnlyIncorrect)}
+                             className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                           >
+                             {showOnlyIncorrect ? 'Show All' : 'Review Wrong Only'}
+                           </button>
+                         )}
+                       </div>
+                       {quizResults.map((result, idx) => ({ result, originalIdx: idx }))
+                         .filter(item => showOnlyIncorrect ? !item.result.isCorrect : true)
+                         .map(({ result, originalIdx }) => (
+                          <div key={originalIdx} className={`p-4 rounded-xl border ${result.isCorrect ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200' : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200'}`}>
                              <div className="flex items-center gap-2 mb-2">
                                 {result.isCorrect ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-rose-600" />}
                                 <span className={`text-sm font-semibold ${result.isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                   Q{idx + 1}: {result.isCorrect ? 'Correct' : 'Incorrect'}
+                                   Q{originalIdx + 1}: {result.isCorrect ? 'Correct' : 'Incorrect'}
                                 </span>
                              </div>
                              {!result.isCorrect && (
-                                <p className="text-xs text-rose-800 dark:text-rose-300 mt-1">
-                                   Your answer: {result.answer} <br/>
-                                   Correct answer: {result.correct}
-                                </p>
+                                <div className="mt-2 text-xs">
+                                   <p className="text-rose-800 dark:text-rose-300">
+                                      Your answer: {result.answer} <br/>
+                                      Correct answer: {result.correct}
+                                   </p>
+                                   {result.explanation && (
+                                     <p className="mt-2 text-rose-700 dark:text-rose-400 font-medium bg-rose-100 dark:bg-rose-500/20 p-2 rounded-lg">
+                                       <span className="font-bold uppercase tracking-wider text-[10px] block mb-1">Explanation:</span>
+                                       {result.explanation}
+                                     </p>
+                                   )}
+                                </div>
                              )}
                           </div>
                        ))}
@@ -622,24 +656,82 @@ export const Quizzes: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                <div>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-500 uppercase tracking-widest font-bold block mb-1">Your Answer</span>
-                  <span className={`text-sm font-medium ${log.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    {log.userAnswer}
-                  </span>
-                </div>
-                
-                {log.createdAt && (
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-                    <Clock className="w-3.5 h-3.5" />
-                    {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() + ' ' + log.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}
+              <div className="flex flex-col gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-500 uppercase tracking-widest font-bold block mb-1">Your Answer</span>
+                    <span className={`text-sm font-medium ${log.isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      {log.userAnswer}
+                    </span>
                   </div>
+                  
+                  {log.createdAt && (
+                    <div className="flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+                      <Clock className="w-3.5 h-3.5" />
+                      {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() + ' ' + log.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}
+                    </div>
+                  )}
+                </div>
+                {log.explanation && (
+                    <div className="bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-widest font-bold block mb-1">Explanation</span>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300">{log.explanation}</p>
+                    </div>
                 )}
               </div>
             </div>
           ))
         )}
+      </div>
+      )}
+
+      {activeTab === 'Review Mistakes' && (
+      <div className="space-y-4 max-w-4xl">
+         <h2 className="text-lg font-semibold text-rose-600 dark:text-rose-400 mb-4">Review Your Mistakes</h2>
+         {logs.filter(log => !log.isCorrect).length === 0 ? (
+           <div className="py-12 text-center text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
+             You have no incorrect answers recorded! Great job!
+           </div>
+         ) : (
+           logs.filter(log => !log.isCorrect).map(log => (
+             <div key={log.id} className="bg-white dark:bg-neutral-900 border border-rose-200 dark:border-rose-900/50 rounded-xl p-5 shadow-sm">
+               <div className="flex items-start justify-between gap-4 mb-3">
+                 <h3 className="font-medium text-sm text-neutral-900 dark:text-neutral-200 leading-relaxed max-w-[85%]">
+                   {log.question}
+                 </h3>
+                 <div className="flex shrink-0 mt-0.5">
+                   <div className="p-1.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500 rounded-lg">
+                     <XCircle className="w-4 h-4" />
+                   </div>
+                 </div>
+               </div>
+               <div className="flex flex-col gap-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs text-rose-400 dark:text-rose-500/80 uppercase tracking-widest font-bold block mb-1">Your Incorrect Answer</span>
+                        <span className="text-sm font-medium text-rose-600 dark:text-rose-400">
+                          {log.userAnswer}
+                        </span>
+                      </div>
+                      {log.createdAt && (
+                        <div className="flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+                          <Clock className="w-3.5 h-3.5" />
+                          {log.createdAt?.toDate ? log.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                        </div>
+                      )}
+                  </div>
+                  {log.explanation ? (
+                      <div className="bg-rose-50 dark:bg-rose-900/10 p-3 rounded-lg border border-rose-100 dark:border-rose-900/30">
+                          <span className="text-xs text-rose-500 dark:text-rose-400 uppercase tracking-widest font-bold block mb-1">AI Explanation</span>
+                          <p className="text-sm text-rose-800 dark:text-rose-200 opacity-90">{log.explanation}</p>
+                      </div>
+                  ) : (
+                      <div className="text-xs text-neutral-400 italic">No explanation available.</div>
+                  )}
+               </div>
+             </div>
+           ))
+         )}
       </div>
       )}
     </div>

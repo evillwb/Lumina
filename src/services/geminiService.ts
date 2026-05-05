@@ -8,6 +8,7 @@ export interface QuizQuestionData {
   question: string;
   options: string[];
   correctAnswer: string;
+  explanation: string;
 }
 
 export const generateQuizQuestions = async (
@@ -24,7 +25,7 @@ export const generateQuizQuestions = async (
     Please generate ${numQuestions} multiple-choice question(s) to test my understanding of the topic: "${topic}".
     ${notes ? `Here are my notes on this topic, try to align the questions with these concepts: "${notes}"` : ''}
 
-    CRITICAL: The entire questions and all options MUST be in the following language: ${language}.
+    CRITICAL: The entire questions, options, and explanations MUST be in the following language: ${language}.
     If there are any attached files/images, use them as extra context for generating the questions.
 
     Return the response ONLY as a JSON string representing an array of objects. Do not include markdown code block formatting or backticks.
@@ -33,7 +34,8 @@ export const generateQuizQuestions = async (
       {
         "question": "The question text (in ${language})",
         "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correctAnswer": "Option A"
+        "correctAnswer": "Option A",
+        "explanation": "A short explanation of why the correct answer is correct and others might be incorrect (in ${language})"
       }
     ]
   `;
@@ -77,7 +79,8 @@ export const generateQuizQuestions = async (
         "It's only theoretical.",
         "None of the above."
       ],
-      correctAnswer: `It's a fundamental part of ${subject}.`
+      correctAnswer: `It's a fundamental part of ${subject}.`,
+      explanation: `This is a fallback question because the AI failed to generate one.`
     }];
   }
 };
