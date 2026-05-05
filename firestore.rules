@@ -28,6 +28,9 @@ service cloud.firestore {
         && ( !('purchasedThemes' in data) || (data.purchasedThemes is list && data.purchasedThemes.size() <= 100) )
         && ( !('activePremiumTheme' in data) || (data.activePremiumTheme is string && data.activePremiumTheme.size() <= 100) )
         && ( !('lastClaimedDaily' in data) || (data.lastClaimedDaily is string && data.lastClaimedDaily.size() <= 100) )
+        && ( !('lastClaimedWeekly' in data) || (data.lastClaimedWeekly is string && data.lastClaimedWeekly.size() <= 100) )
+        && ( !('lastClaimedMonthly' in data) || (data.lastClaimedMonthly is string && data.lastClaimedMonthly.size() <= 100) )
+        && ( !('lastClaimedPetQuest' in data) || (data.lastClaimedPetQuest is string && data.lastClaimedPetQuest.size() <= 100) )
         && ( !('petFood' in data) || (data.petFood is number && data.petFood >= 0 && data.petFood <= 100000000) )
         && ( !('petWater' in data) || (data.petWater is number && data.petWater >= 0 && data.petWater <= 100000000) )
         && ( !('myPets' in data) || (data.myPets is list && data.myPets.size() <= 100) )
@@ -48,6 +51,9 @@ service cloud.firestore {
         && ( !('purchasedThemes' in data) || (data.purchasedThemes is list && data.purchasedThemes.size() <= 100) )
         && ( !('activePremiumTheme' in data) || (data.activePremiumTheme is string && data.activePremiumTheme.size() <= 100) )
         && ( !('lastClaimedDaily' in data) || (data.lastClaimedDaily is string && data.lastClaimedDaily.size() <= 100) )
+        && ( !('lastClaimedWeekly' in data) || (data.lastClaimedWeekly is string && data.lastClaimedWeekly.size() <= 100) )
+        && ( !('lastClaimedMonthly' in data) || (data.lastClaimedMonthly is string && data.lastClaimedMonthly.size() <= 100) )
+        && ( !('lastClaimedPetQuest' in data) || (data.lastClaimedPetQuest is string && data.lastClaimedPetQuest.size() <= 100) )
         && ( !('petFood' in data) || (data.petFood is number && data.petFood >= 0 && data.petFood <= 100000000) )
         && ( !('petWater' in data) || (data.petWater is number && data.petWater >= 0 && data.petWater <= 100000000) )
         && ( !('myPets' in data) || (data.myPets is list && data.myPets.size() <= 100) )
@@ -115,7 +121,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
       allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
-      allow update: if isOwner(userId) && isValidId(userId) && isValidUserUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastActiveDate', 'updatedAt', 'credits', 'purchasedThemes', 'activePremiumTheme', 'lastClaimedDaily', 'petFood', 'petWater', 'myPets', 'activePet', 'lastPetDecayDate', 'timezone']);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastActiveDate', 'updatedAt', 'credits', 'purchasedThemes', 'activePremiumTheme', 'lastClaimedDaily', 'lastClaimedWeekly', 'lastClaimedMonthly', 'lastClaimedPetQuest', 'petFood', 'petWater', 'myPets', 'activePet', 'lastPetDecayDate', 'timezone']);
       allow delete: if isOwner(userId) && isValidId(userId);
       
       // We do not have any list method for users since users only read their own profile directly

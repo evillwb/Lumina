@@ -235,16 +235,18 @@ export const Quizzes: React.FC = () => {
     try {
       // Log Quiz Result
       const logId = uuidv4();
-      const newLog = {
+      const newLog: any = {
         userId: user.uid,
-        topicId: selectedTopicId,
+        topicId: selectedTopicId || 'mixed',
         blockId: 'manual-quiz',
         question: currentQ.question,
         userAnswer: selectedAnswer,
         isCorrect,
-        explanation: currentQ.explanation || null,
         createdAt: serverTimestamp()
       };
+      if (currentQ.explanation) {
+        newLog.explanation = currentQ.explanation;
+      }
       await setDoc(doc(db, 'users', user.uid, 'quizLogs', logId), newLog);
       
       setLogs(prev => [{ id: logId, ...newLog, createdAt: { toDate: () => new Date() }} as any, ...prev]);
@@ -425,6 +427,7 @@ export const Quizzes: React.FC = () => {
                              <span className="text-xs text-neutral-400 mt-1">If provided, the AI will use this to generate the question</span>
                              <input 
                                type="file" 
+                               accept=".pdf,text/plain,image/png,image/jpeg,image/webp"
                                className="hidden" 
                                onChange={(e) => {
                                   if (e.target.files) {

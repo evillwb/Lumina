@@ -214,14 +214,14 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
             <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Retention Trajectory</h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Spaced repetition estimated retention over 7 days.</p>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-64 min-h-[250px] w-full">
             {topics.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
                 <p className="text-neutral-500 dark:text-neutral-400 mb-2">No learning data yet.</p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">Go to your Syllabus to add topics.</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
                 <AreaChart data={data}>
                   <defs>
                     <linearGradient id="colorRetention" x1="0" y1="0" x2="0" y2="1">
@@ -249,7 +249,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Your current learning attributes.</p>
           </div>
           <div className="flex-1 min-h-[250px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                 <PolarGrid stroke="#525252" opacity={0.3} />
                 <PolarAngleAxis dataKey="subject" tick={{ fill: '#a3a3a3', fontSize: 11 }} />
@@ -286,7 +286,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
               <p className="text-xs text-neutral-400 dark:text-neutral-500">Take quizzes to see your mastery grow.</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
               <LineChart data={progressionData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#525252" opacity={0.2} vertical={false} />
                 <XAxis dataKey="date" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} />

@@ -14,6 +14,9 @@ export interface UserProfile {
   purchasedThemes?: string[];
   activePremiumTheme?: string;
   lastClaimedDaily?: string;
+  lastClaimedWeekly?: string;
+  lastClaimedMonthly?: string;
+  lastClaimedPetQuest?: string;
   petFood?: number;
   petWater?: number;
   myPets?: any[];
@@ -76,4 +79,4 @@ export const STUDY_HOURS = {
   end: 23
 };
 
-export const PRESET_SUBJECTS = ['SPM Science Stream', 'Accounting', 'STPM', 'A Level', 'O Level'];
+export const PRESET_SUBJECTS = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'History', 'Geography', 'Economics', 'Computer Science', 'Literature', 'Custom'];

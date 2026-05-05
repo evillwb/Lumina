@@ -198,6 +198,22 @@ export const StoreQuests: React.FC = () => {
        handleFirestoreError(err, OperationType.UPDATE, 'users');
     }
   };
+  const getISOWeek = (date: Date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
+  };
+
+  const getWeekStr = (date: Date) => {
+    return `${date.getFullYear()}-W${getISOWeek(date).toString().padStart(2, '0')}`;
+  };
+
+  const getMonthStr = (date: Date) => {
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  };
+
   const claimDaily = async () => {
      if (!user || !profile) return;
      const tz = profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -224,6 +240,142 @@ export const StoreQuests: React.FC = () => {
          origin: { y: 0.8 }
        });
        showToast("Claimed 15 credits!");
+     } catch (err) {
+       handleFirestoreError(err, OperationType.UPDATE, 'users');
+     }
+  }
+
+  const claimWeekly = async () => {
+     if (!user || !profile) return;
+     const now = new Date();
+     const weekStr = getWeekStr(now);
+
+     if (profile.lastClaimedWeekly === weekStr) {
+        showToast("Already claimed this week!");
+        return;
+     }
+
+     try {
+       const newCredits = (profile.credits || 0) + 50;
+       await updateDoc(doc(db, 'users', user.uid), { 
+         credits: newCredits, 
+         lastClaimedWeekly: weekStr,
+         updatedAt: serverTimestamp() 
+       });
+       setProfile({...profile, credits: newCredits, lastClaimedWeekly: weekStr});
+       playSuccessSound();
+       confetti({ particleCount: 80, spread: 80, origin: { y: 0.8 } });
+       showToast("Claimed 50 credits!");
+     } catch (err) {
+       handleFirestoreError(err, OperationType.UPDATE, 'users');
+     }
+  }
+
+  const claimMonthly = async () => {
+     if (!user || !profile) return;
+     const now = new Date();
+     const monthStr = getMonthStr(now);
+
+     if (profile.lastClaimedMonthly === monthStr) {
+        showToast("Already claimed this month!");
+        return;
+     }
+
+     try {
+       const newCredits = (profile.credits || 0) + 200;
+       await updateDoc(doc(db, 'users', user.uid), { 
+         credits: newCredits, 
+         lastClaimedMonthly: monthStr,
+         updatedAt: serverTimestamp() 
+       });
+       setProfile({...profile, credits: newCredits, lastClaimedMonthly: monthStr});
+       playSuccessSound();
+       confetti({ particleCount: 150, spread: 100, origin: { y: 0.8 } });
+       showToast("Claimed 200 credits!");
+     } catch (err) {
+       handleFirestoreError(err, OperationType.UPDATE, 'users');
+     }
+  }
+
+  const claimPetQuest = async () => {
+     if (!user || !profile || !profile.activePet) {
+        if (!profile?.activePet) showToast("You need to equip a pet first!");
+        return;
+     }
+     
+     const now = new Date();
+     const tz = profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+     const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+     
+     if (profile.lastClaimedPetQuest === dateStr) {
+        showToast("Pet quest already completed today!");
+        return;
+     }
+
+     const isFeed = now.getDate() % 2 === 0;
+     const currentHappiness = profile.activePet.happiness ?? 50;
+     const currentCleanliness = profile.activePet.cleanliness ?? 50;
+     
+     if (isFeed && currentHappiness >= 100) {
+        showToast("Your pet is already full!");
+        return;
+     }
+     
+     if (!isFeed && currentCleanliness >= 100) {
+        showToast("Your pet is already squeaky clean!");
+        return;
+     }
+
+     if (isFeed && (profile.petFood || 0) < 1) {
+        showToast("You need Pet Food to feed your pet!");
+        return;
+     }
+     
+     if (!isFeed && (profile.petWater || 0) < 1) {
+        showToast("You need Pet Water to clean your pet!");
+        return;
+     }
+
+     const statusVal = isFeed ? currentHappiness : currentCleanliness;
+     const dynamicBonus = Math.floor((100 - statusVal) / 2); // Additional credits
+     const totalReward = 30 + dynamicBonus;
+
+     try {
+       const newCredits = (profile.credits || 0) + totalReward;
+       const newPetFood = isFeed ? Math.max(0, (profile.petFood || 0) - 1) : profile.petFood;
+       const newPetWater = !isFeed ? Math.max(0, (profile.petWater || 0) - 1) : profile.petWater;
+       
+       const updatedPet = {
+         ...profile.activePet,
+         happiness: isFeed ? Math.min(100, currentHappiness + 20) : profile.activePet.happiness,
+         cleanliness: !isFeed ? Math.min(100, currentCleanliness + 20) : profile.activePet.cleanliness
+       };
+       
+       const newMyPets = (profile.myPets || []).map(p => p.id === updatedPet.id ? updatedPet : p);
+
+       await updateDoc(doc(db, 'users', user.uid), { 
+         credits: newCredits, 
+         petFood: newPetFood,
+         petWater: newPetWater,
+         activePet: updatedPet,
+         myPets: newMyPets,
+         lastClaimedPetQuest: dateStr,
+         updatedAt: serverTimestamp() 
+       });
+       
+       setProfile({
+         ...profile, 
+         credits: newCredits, 
+         petFood: newPetFood,
+         petWater: newPetWater,
+         activePet: updatedPet,
+         myPets: newMyPets,
+         lastClaimedPetQuest: dateStr
+       });
+       
+       playSuccessSound();
+       confetti({ particleCount: 100, spread: 80, origin: { y: 0.8 } });
+       showToast(`Completed! Awarded ${totalReward} credits`);
      } catch (err) {
        handleFirestoreError(err, OperationType.UPDATE, 'users');
      }
@@ -294,21 +446,71 @@ export const StoreQuests: React.FC = () => {
                 </div>
                 <button 
                   onClick={claimDaily} 
-                  disabled={profile?.lastClaimedDaily === new Date().toISOString().split('T')[0]}
-                  className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${profile?.lastClaimedDaily === new Date().toISOString().split('T')[0] ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
-                   {profile?.lastClaimedDaily === new Date().toISOString().split('T')[0] ? 'Claimed' : 'Claim +15'}
+                  disabled={profile?.lastClaimedDaily === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                  })()}
+                  className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${profile?.lastClaimedDaily === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                  })() ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md active:scale-95'}`}>
+                   {profile?.lastClaimedDaily === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                   })() ? 'Claimed' : 'Claim +15'}
                 </button>
              </div>
-             
-             {/* Note: This is an unlinked dummy quest for UI presentation */}
-             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm opacity-60">
+
+             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
                 <div>
-                   <h3 className="font-medium text-sm text-neutral-900 dark:text-white">Review 3 Topics</h3>
-                   <p className="text-xs text-neutral-500 dark:text-neutral-400">0/3 completed</p>
+                   <h3 className="font-medium text-sm text-neutral-900 dark:text-white">Weekly Bonus</h3>
+                   <p className="text-xs text-neutral-500 dark:text-neutral-400">Come back this week for a boost.</p>
                 </div>
-                <span className="px-3 py-1.5 bg-neutral-200 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-xs font-bold rounded-lg">
-                   +30
-                </span>
+                <button 
+                  onClick={claimWeekly} 
+                  disabled={profile?.lastClaimedWeekly === getWeekStr(new Date())}
+                  className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${profile?.lastClaimedWeekly === getWeekStr(new Date()) ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md active:scale-95'}`}>
+                   {profile?.lastClaimedWeekly === getWeekStr(new Date()) ? 'Claimed' : 'Claim +50'}
+                </button>
+             </div>
+
+             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                <div>
+                   <h3 className="font-medium text-sm text-neutral-900 dark:text-white">Monthly Reward</h3>
+                   <p className="text-xs text-neutral-500 dark:text-neutral-400">A big reward once a month!</p>
+                </div>
+                <button 
+                  onClick={claimMonthly} 
+                  disabled={profile?.lastClaimedMonthly === getMonthStr(new Date())}
+                  className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${profile?.lastClaimedMonthly === getMonthStr(new Date()) ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md active:scale-95'}`}>
+                   {profile?.lastClaimedMonthly === getMonthStr(new Date()) ? 'Claimed' : 'Claim +200'}
+                </button>
+             </div>
+
+             <div className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm`}>
+                <div>
+                   <h3 className="font-medium text-sm text-neutral-900 dark:text-white">
+                      {new Date().getDate() % 2 === 0 ? 'Feed Your Pet' : 'Clean Your Pet'}
+                   </h3>
+                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {new Date().getDate() % 2 === 0 ? 'Cost: 1x Food.' : 'Cost: 1x Water.'}
+                   </p>
+                </div>
+                <button 
+                  onClick={claimPetQuest} 
+                  disabled={profile?.lastClaimedPetQuest === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                  })()}
+                  className={`px-3 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${profile?.lastClaimedPetQuest === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                  })() ? 'bg-neutral-400 dark:bg-neutral-700 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700 shadow-md active:scale-95'}`}>
+                   {profile?.lastClaimedPetQuest === (() => {
+                      const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+                      return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                   })() ? 'Completed' : 'Do Quest'}
+                </button>
              </div>
           </div>
         </section>

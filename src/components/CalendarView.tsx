@@ -5,7 +5,7 @@ import { useTranslation } from '../locales/i18n';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, doc, getDocs, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { ScheduleBlock, STUDY_HOURS, Topic } from '../types';
-import { CheckCircle2, XCircle, CalendarIcon, BrainCircuit, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { CheckCircle2, XCircle, CalendarIcon, BrainCircuit, ChevronLeft, ChevronRight, Plus, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateQuizQuestions, generateDynamicQuiz } from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
@@ -678,23 +678,27 @@ export const CalendarView: React.FC = () => {
                             ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[inset_0_0_15px_rgba(16,185,129,0.05)]' 
                             : block.status === 'failed'
                             ? 'bg-rose-500/10 border-rose-500/20 shadow-[inset_0_0_15px_rgba(244,63,94,0.05)]'
+                            : block.status === 'upcoming' && block.isReview ? 'bg-orange-500/10 border-orange-500/40 ring-1 ring-orange-500/20 shadow-lg shadow-orange-500/5 backdrop-blur-md'
                             : 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/5 backdrop-blur-md'
                         }`}
                       >
                         <div className={`flex justify-between items-start ${isMonthView ? 'mb-0' : 'mb-1'}`}>
                           <span className={`${isMonthView ? 'text-[8px] sm:text-[9px]' : 'text-[9px]'} font-bold uppercase tracking-widest ${
                             block.status === 'mastered' ? 'text-emerald-600 dark:text-emerald-500' : 
-                            block.status === 'failed' ? 'text-rose-600 dark:text-rose-500' : 'text-blue-700 dark:text-blue-500'
+                            block.status === 'failed' ? 'text-rose-600 dark:text-rose-500' : 
+                            block.status === 'upcoming' && block.isReview ? 'text-orange-700 dark:text-orange-500' : 'text-blue-700 dark:text-blue-500'
                           }`}>
                             {block.startTime}
                           </span>
                           {!isMonthView && block.status === 'mastered' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />}
                           {!isMonthView && block.status === 'failed' && <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-500" />}
+                          {!isMonthView && block.status === 'upcoming' && block.isReview && <RefreshCw className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400 animate-spin-slow" />}
                         </div>
                         
                         <h3 className={`font-semibold leading-snug mb-2 ${isMonthView ? 'text-[9px] sm:text-xs truncate' : 'text-xs'} ${
                           block.status === 'mastered' ? 'text-emerald-900 dark:text-emerald-100' : 
-                          block.status === 'failed' ? 'text-rose-900 dark:text-rose-100' : 'text-blue-900 dark:text-blue-100'
+                          block.status === 'failed' ? 'text-rose-900 dark:text-rose-100' : 
+                          block.status === 'upcoming' && block.isReview ? 'text-orange-900 dark:text-orange-100' : 'text-blue-900 dark:text-blue-100'
                         }`}>
                           {block.title}
                         </h3>

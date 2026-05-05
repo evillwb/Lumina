@@ -10,8 +10,18 @@
         "streak": { "type": "integer" },
         "lastActiveDate": { "type": "string" },
         "credits": { "type": "integer" },
+        "petFood": { "type": "integer" },
+        "petWater": { "type": "integer" },
         "purchasedThemes": { "type": "array", "items": { "type": "string" } },
         "activePremiumTheme": { "type": "string" },
+        "myPets": { "type": "array", "items": { "type": "object" } },
+        "activePet": { "type": "object" },
+        "lastClaimedDaily": { "type": "string" },
+        "lastClaimedWeekly": { "type": "string" },
+        "lastClaimedMonthly": { "type": "string" },
+        "lastClaimedPetQuest": { "type": "string" },
+        "timezone": { "type": "string" },
+        "lastPetDecayDate": { "type": "string" },
         "createdAt": { "type": "string", "description": "Timestamp" },
         "updatedAt": { "type": "string", "description": "Timestamp" }
       },
@@ -63,6 +73,7 @@
         "question": { "type": "string" },
         "userAnswer": { "type": "string" },
         "isCorrect": { "type": "boolean" },
+        "explanation": { "type": "string" },
         "createdAt": { "type": "string" }
       },
       "required": ["userId", "topicId", "blockId", "question", "userAnswer", "isCorrect", "createdAt"]
