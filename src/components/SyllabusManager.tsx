@@ -42,7 +42,7 @@ export const SyllabusManager: React.FC = () => {
       }
       
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Generate a concise set of study notes for the topic "${title}" under the subject "${subject === 'Custom' ? 'a particular subject' : subject}". The notes should include key concepts, formulas, or reminders that are essential for studying this topic. Format the response using markdown.`;
+      const prompt = `Generate a concise set of study notes for the topic "${title}" under the subject "${subject === 'Custom' ? 'a particular subject' : subject}". The content should be tailored to a learning material difficulty level of "${difficulty}" and a quiz proficiency expectation of "${quizDifficulty}". The notes should include key concepts, formulas, or reminders that are essential for studying this topic. Format the response using markdown.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",

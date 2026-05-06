@@ -9,6 +9,7 @@ import { useTranslation } from '../locales/i18n';
 import { Topic } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleGenAI } from '@google/genai';
 
 interface QuizLog {
   id: string;
@@ -54,6 +55,30 @@ export const Quizzes: React.FC = () => {
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
   const [examModeActive, setExamModeActive] = useState(false);
   const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
+  const [generatingExplanations, setGeneratingExplanations] = useState<Record<string, boolean>>({});
+
+  const generateExplanationOnFly = async (logId: string, question: string, correctAnswer: string) => {
+    if (!user) return;
+    setGeneratingExplanations(prev => ({...prev, [logId]: true}));
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const prompt = `Give a concise explanation of why "${correctAnswer}" is the correct answer for this multiple choice question: "${question}". Respond directly with the explanation in ${language}.`;
+        const response = await ai.models.generateContent({
+           model: 'gemini-2.5-flash',
+           contents: prompt
+        });
+        const expl = response.text || "Failed to generate explanation.";
+        await updateDoc(doc(db, 'users', user.uid, 'quizLogs', logId), {
+            explanation: expl
+        });
+        setLogs(prev => prev.map(l => l.id === logId ? {...l, explanation: expl} : l));
+    } catch (e) {
+        console.error(e);
+        alert('Failed to generate explanation');
+    } finally {
+        setGeneratingExplanations(prev => ({...prev, [logId]: false}));
+    }
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -674,10 +699,24 @@ export const Quizzes: React.FC = () => {
                     </div>
                   )}
                 </div>
-                {log.explanation && (
+                {log.explanation ? (
                     <div className="bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
                         <span className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-widest font-bold block mb-1">Explanation</span>
                         <p className="text-sm text-neutral-700 dark:text-neutral-300">{log.explanation}</p>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-between">
+                       <span className="text-xs text-neutral-400 italic">No explanation available.</span>
+                       <button 
+                          onClick={() => {
+                             generateExplanationOnFly(log.id, log.question, 'the correct answer');
+                          }}
+                          disabled={generatingExplanations[log.id]}
+                          className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"
+                       >
+                          <BrainCircuit className="w-3 h-3" />
+                          {generatingExplanations[log.id] ? 'Generating...' : 'Get Explanation'}
+                       </button>
                     </div>
                 )}
               </div>
@@ -728,7 +767,23 @@ export const Quizzes: React.FC = () => {
                           <p className="text-sm text-rose-800 dark:text-rose-200 opacity-90">{log.explanation}</p>
                       </div>
                   ) : (
-                      <div className="text-xs text-neutral-400 italic">No explanation available.</div>
+                      <div className="flex items-center justify-between">
+                         <span className="text-xs text-neutral-400 italic">No explanation available.</span>
+                         <button 
+                            onClick={() => {
+                               // Assuming the question format typically implies what's correct, but we might not have log.correctAnswer.
+                               // In the QuizLog interface, we only have log.question, log.userAnswer, log.isCorrect.
+                               // We might not have the correct answer in the log if it wasn't saved!
+                               // Let's generate it anyway based on the question.
+                               generateExplanationOnFly(log.id, log.question, 'the correct answer');
+                            }}
+                            disabled={generatingExplanations[log.id]}
+                            className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"
+                         >
+                            <BrainCircuit className="w-3 h-3" />
+                            {generatingExplanations[log.id] ? 'Generating...' : 'Get Explanation'}
+                         </button>
+                      </div>
                   )}
                </div>
              </div>

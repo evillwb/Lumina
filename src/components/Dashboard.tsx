@@ -120,6 +120,33 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
     fetchData();
   }, [user]);
 
+  const subjectMasteryData = useMemo(() => {
+     if (topics.length === 0) return [];
+     const subjectMap: Record<string, { totalMastery: number, count: number }> = {};
+     topics.forEach(topic => {
+         const subj = topic.subject || 'Custom';
+         if (!subjectMap[subj]) {
+             subjectMap[subj] = { totalMastery: 0, count: 0 };
+         }
+         subjectMap[subj].totalMastery += (topic.masteryLevel || 0);
+         subjectMap[subj].count += 1;
+     });
+     
+     const processedData = Object.entries(subjectMap).map(([subject, data]) => ({
+         subject: subject.length > 12 ? subject.substring(0, 10) + '...' : subject,
+         A: Math.min(100, Math.round(data.totalMastery / data.count)),
+         fullSubject: subject,
+         fullMark: 100
+     }));
+
+     // Pad with empty vertices if less than 3 so the RadarChart will render a polygon
+     while (processedData.length > 0 && processedData.length < 3) {
+         processedData.push({ subject: `(Empty ${processedData.length})`, A: 0, fullSubject: '', fullMark: 100 });
+     }
+     
+     return processedData;
+  }, [topics]);
+
   if (loading) return <div className="p-8 text-neutral-400">Loading metrics...</div>;
 
   if (!user) {
@@ -151,14 +178,8 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
     ];
   }
 
-  const radarData = [
-    { subject: t('memory'), A: Math.min(100, Math.max(20, totalMastery + 10)), fullMark: 100 },
-    { subject: t('reading'), A: Math.min(100, Math.max(20, totalMastery - 5)), fullMark: 100 },
-    { subject: t('writing'), A: Math.min(100, Math.max(20, totalMastery + 5)), fullMark: 100 },
-    { subject: t('focus'), A: Math.min(100, Math.max(20, (profile?.streak || 0) * 10 + 20)), fullMark: 100 },
-    { subject: t('logic'), A: Math.min(100, Math.max(20, totalMastery)), fullMark: 100 },
-    { subject: t('creativity'), A: Math.min(100, Math.max(20, totalMastery + 15)), fullMark: 100 },
-  ];
+
+
 
   return (
     <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto">
@@ -245,18 +266,30 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
         {/* Radar Chart */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col">
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Cognitive Profile</h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Your current learning attributes.</p>
+            <h3 className="text-lg font-medium text-neutral-900 dark:text-white">Subject Mastery</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Your average mastery level per subject.</p>
           </div>
           <div className="flex-1 min-h-[250px] w-full mt-4">
-            <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
-              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                <PolarGrid stroke="#525252" opacity={0.3} />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#a3a3a3', fontSize: 11 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar name="Profile" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.4} />
-              </RadarChart>
-            </ResponsiveContainer>
+            {subjectMasteryData.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
+                <p className="text-neutral-500 dark:text-neutral-400 mb-2">No active subjects.</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500">Track subjects to see breakdown.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%" minHeight={1} minWidth={1}>
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={subjectMasteryData}>
+                  <PolarGrid stroke="#525252" opacity={0.3} />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#a3a3a3', fontSize: 11 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', borderRadius: '8px' }}
+                    itemStyle={{ color: '#e5e5e5' }}
+                    formatter={(value: number, name: string, props: any) => [`${value}%`, props.payload.fullSubject || 'Mastery']}
+                  />
+                  <Radar name="Mastery" dataKey="A" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.4} />
+                </RadarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

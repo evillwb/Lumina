@@ -21,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   const { t } = useTranslation();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [displayPet, setDisplayPet] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -28,58 +29,124 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       setProfile(null);
       return;
     }
-    const checkClaimStatus = async () => {
-      const d = await getDoc(doc(db, 'users', user.uid));
-      if (d.exists()) {
-         const data = d.data() as UserProfile;
-         const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-         const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
-         const todayStr = formatter.format(new Date());
-         
-         let updated = false;
-         let newActivePet = data.activePet;
-         
-         if (data.activePet) {
-            const lastDecay = data.lastPetDecayDate;
-            if (lastDecay && lastDecay !== todayStr) {
-               const todayParts = todayStr.split('-').map(Number);
-               const lastParts = lastDecay.split('-').map(Number);
-               const daysDiff = Math.floor((new Date(todayParts[0], todayParts[1]-1, todayParts[2]).getTime() - new Date(lastParts[0], lastParts[1]-1, lastParts[2]).getTime()) / (1000 * 3600 * 24));
-               
-               if (daysDiff > 0) {
-                  newActivePet = {
-                     ...data.activePet,
-                     happiness: Math.max(0, (data.activePet.happiness ?? 50) - (20 * daysDiff)),
-                     fun: Math.max(0, (data.activePet.fun ?? 50) - (15 * daysDiff)),
-                     cleanliness: Math.max(0, (data.activePet.cleanliness ?? 50) - (25 * daysDiff))
-                  };
-                  updated = true;
-               }
-            } else if (!lastDecay) {
-               updated = true;
-            }
-         }
 
-         if (updated) {
-            await updateDoc(doc(db, 'users', user.uid), {
-               activePet: newActivePet,
-               lastPetDecayDate: todayStr,
-               updatedAt: serverTimestamp()
-            });
-            data.activePet = newActivePet;
-            data.lastPetDecayDate = todayStr;
-         }
+    import('firebase/firestore').then(({ onSnapshot }) => {
+      const unsubscribe = onSnapshot(doc(db, 'users', user.uid), async (d) => {
+        if (d.exists()) {
+           const data = d.data() as UserProfile;
+           const tz = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+           const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+           const todayStr = formatter.format(new Date());
+           const now = new Date();
+           const nowISO = now.toISOString();
+           
+           let updated = false;
+           let newActivePet = data.activePet;
+           
+           if (data.activePet) {
+              const lastDecay = data.lastPetDecayDate;
+              let lastCheckTime = 0;
+              
+              if (lastDecay) {
+                 if (lastDecay.includes('T')) {
+                     lastCheckTime = new Date(lastDecay).getTime();
+                 } else {
+                     // Migrate from previous YYYY-MM-DD
+                     const parts = lastDecay.split('-').map(Number);
+                     lastCheckTime = new Date(parts[0], parts[1]-1, parts[2]).getTime();
+                 }
+              }
 
-         setProfile(data);
-         if (data.lastClaimedDaily !== todayStr) {
-            setCanClaimDaily(true);
-         } else {
-            setCanClaimDaily(false);
-         }
-      }
-    };
-    checkClaimStatus();
-  }, [user, activeTab]);
+              if (lastCheckTime > 0) {
+                 const hoursDiff = (now.getTime() - lastCheckTime) / (1000 * 3600);
+                 
+                 // Persist to DB if > 1 hour elapsed, or migrating format
+                 if (hoursDiff > 1 || !lastDecay?.includes('T')) {
+                    const happinessDecay = (20 / 24) * hoursDiff;
+                    const funDecay = (15 / 24) * hoursDiff;
+                    const cleanlinessDecay = (25 / 24) * hoursDiff;
+                    const hydrationDecay = (15 / 24) * hoursDiff;
+
+                    newActivePet = {
+                       ...data.activePet,
+                       happiness: Math.max(0, (data.activePet.happiness ?? 50) - happinessDecay),
+                       fun: Math.max(0, (data.activePet.fun ?? 50) - funDecay),
+                       cleanliness: Math.max(0, (data.activePet.cleanliness ?? 50) - cleanlinessDecay),
+                       hydration: Math.max(0, (data.activePet.hydration ?? 50) - hydrationDecay)
+                    };
+                    updated = true;
+                 }
+              } else if (!lastDecay) {
+                 updated = true;
+              }
+           }
+
+           if (updated) {
+              // Note: Using a background async update
+              await updateDoc(doc(db, 'users', user.uid), {
+                 activePet: newActivePet,
+                 lastPetDecayDate: nowISO,
+                 updatedAt: serverTimestamp()
+              }).catch(console.error);
+           } else {
+              setProfile(data);
+           }
+
+           if (data.lastClaimedDaily !== todayStr) {
+              setCanClaimDaily(true);
+           } else {
+              setCanClaimDaily(false);
+           }
+        }
+      });
+      // The local var isn't easy to clean up here if we async load the module inside useEffect
+      // so we will just let it run or rely on component unmount standard practices. 
+      // A better way is:
+      return () => unsubscribe();
+    });
+  }, [user]);
+
+  // Local effect for real-time visual decay minute-by-minute
+  useEffect(() => {
+     if (!profile?.activePet) {
+        setDisplayPet(null);
+        return;
+     }
+
+     const calculateDecay = () => {
+        const lastDecay = profile.lastPetDecayDate;
+        if (!lastDecay || !lastDecay.includes('T')) {
+           setDisplayPet(profile.activePet);
+           return;
+        }
+
+        const lastCheckTime = new Date(lastDecay).getTime();
+        const now = new Date();
+        const hoursDiff = (now.getTime() - lastCheckTime) / (1000 * 3600);
+
+        if (hoursDiff > 0) {
+           const happinessDecay = (20 / 24) * hoursDiff;
+           const funDecay = (15 / 24) * hoursDiff;
+           const cleanlinessDecay = (25 / 24) * hoursDiff;
+           const hydrationDecay = (15 / 24) * hoursDiff;
+
+           setDisplayPet({
+               ...profile.activePet,
+               happiness: Math.max(0, (profile.activePet.happiness ?? 50) - happinessDecay),
+               fun: Math.max(0, (profile.activePet.fun ?? 50) - funDecay),
+               cleanliness: Math.max(0, (profile.activePet.cleanliness ?? 50) - cleanlinessDecay),
+               hydration: Math.max(0, (profile.activePet.hydration ?? 50) - hydrationDecay)
+           });
+        } else {
+           setDisplayPet(profile.activePet);
+        }
+     };
+
+     calculateDecay();
+     const interval = setInterval(calculateDecay, 60000); // UI updates every 1 min
+
+     return () => clearInterval(interval);
+  }, [profile]);
 
   const feedPet = async () => {
     if (!user || !profile || !profile.petFood) return;
@@ -244,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                      animate={{ scale: 1, y: 0, rotate: 0, opacity: 1 }}
                      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                    >
-                      {profile.activePet?.icon || '🐱'}
+                      {displayPet?.icon || '🐱'}
                    </motion.div>
                    <AnimatePresence>
                      {petActionCount > 0 && petActionType === 'feed' && (
@@ -295,14 +362,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 </div>
                 <div className="flex-1 w-full min-w-0 flex flex-col gap-1.5">
                    <div className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
-                     {profile.activePet?.name || 'Basic Cat'}
+                     {displayPet?.name || 'Basic Cat'}
                    </div>
                    
                    {/* Fullness */}
                    <div className="flex items-center gap-2">
                      <span className="text-[10px] font-bold text-neutral-500 w-12 tracking-wide uppercase">Full</span>
                      <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden w-full">
-                        <div className="h-full bg-rose-500 transition-all duration-300" style={{ width: `${profile.activePet?.happiness || 50}%` }} />
+                        <div className="h-full bg-rose-500 transition-all duration-300" style={{ width: `${displayPet?.happiness || 50}%` }} />
                      </div>
                    </div>
 
@@ -310,7 +377,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                    <div className="flex items-center gap-2">
                      <span className="text-[10px] font-bold text-neutral-500 w-12 tracking-wide uppercase">Water</span>
                      <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden w-full">
-                        <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: `${profile.activePet?.hydration || 50}%` }} />
+                        <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: `${displayPet?.hydration || 50}%` }} />
                      </div>
                    </div>
 
@@ -318,7 +385,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                    <div className="flex items-center gap-2">
                      <span className="text-[10px] font-bold text-neutral-500 w-12 tracking-wide uppercase">Fun</span>
                      <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden w-full">
-                        <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${profile.activePet?.fun || 50}%` }} />
+                        <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${displayPet?.fun || 50}%` }} />
                      </div>
                    </div>
 
@@ -326,7 +393,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                    <div className="flex items-center gap-2">
                      <span className="text-[10px] font-bold text-neutral-500 w-12 tracking-wide uppercase">Clean</span>
                      <div className="flex-1 h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden w-full">
-                        <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${profile.activePet?.cleanliness || 50}%` }} />
+                        <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${displayPet?.cleanliness || 50}%` }} />
                      </div>
                    </div>
                 </div>
