@@ -57,12 +57,12 @@ export const Quizzes: React.FC = () => {
   const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState<Record<string, boolean>>({});
 
-  const generateExplanationOnFly = async (logId: string, question: string, correctAnswer: string) => {
+  const generateExplanationOnFly = async (logId: string, question: string, userAnswer: string) => {
     if (!user) return;
     setGeneratingExplanations(prev => ({...prev, [logId]: true}));
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const prompt = `Give a concise explanation of why "${correctAnswer}" is the correct answer for this multiple choice question: "${question}". Respond directly with the explanation in ${language}.`;
+        const prompt = `Give a concise explanation of why the answer "${userAnswer}" is incorrect for this multiple choice question: "${question}", and what the correct answer should be. Respond directly with the explanation in ${language}.`;
         const response = await ai.models.generateContent({
            model: 'gemini-2.5-flash',
            contents: prompt
@@ -709,7 +709,7 @@ export const Quizzes: React.FC = () => {
                        <span className="text-xs text-neutral-400 italic">No explanation available.</span>
                        <button 
                           onClick={() => {
-                             generateExplanationOnFly(log.id, log.question, 'the correct answer');
+                             generateExplanationOnFly(log.id, log.question, log.userAnswer || 'an unknown answer');
                           }}
                           disabled={generatingExplanations[log.id]}
                           className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"
@@ -771,11 +771,7 @@ export const Quizzes: React.FC = () => {
                          <span className="text-xs text-neutral-400 italic">No explanation available.</span>
                          <button 
                             onClick={() => {
-                               // Assuming the question format typically implies what's correct, but we might not have log.correctAnswer.
-                               // In the QuizLog interface, we only have log.question, log.userAnswer, log.isCorrect.
-                               // We might not have the correct answer in the log if it wasn't saved!
-                               // Let's generate it anyway based on the question.
-                               generateExplanationOnFly(log.id, log.question, 'the correct answer');
+                               generateExplanationOnFly(log.id, log.question, log.userAnswer || 'an unknown answer');
                             }}
                             disabled={generatingExplanations[log.id]}
                             className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"

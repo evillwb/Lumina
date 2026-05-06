@@ -120,32 +120,14 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
     fetchData();
   }, [user]);
 
-  const subjectMasteryData = useMemo(() => {
-     if (topics.length === 0) return [];
-     const subjectMap: Record<string, { totalMastery: number, count: number }> = {};
-     topics.forEach(topic => {
-         const subj = topic.subject || 'Custom';
-         if (!subjectMap[subj]) {
-             subjectMap[subj] = { totalMastery: 0, count: 0 };
-         }
-         subjectMap[subj].totalMastery += (topic.masteryLevel || 0);
-         subjectMap[subj].count += 1;
-     });
-     
-     const processedData = Object.entries(subjectMap).map(([subject, data]) => ({
-         subject: subject.length > 12 ? subject.substring(0, 10) + '...' : subject,
-         A: Math.min(100, Math.round(data.totalMastery / data.count)),
-         fullSubject: subject,
-         fullMark: 100
-     }));
-
-     // Pad with empty vertices if less than 3 so the RadarChart will render a polygon
-     while (processedData.length > 0 && processedData.length < 3) {
-         processedData.push({ subject: `(Empty ${processedData.length})`, A: 0, fullSubject: '', fullMark: 100 });
-     }
-     
-     return processedData;
-  }, [topics]);
+  const subjectMasteryData = [
+    { subject: t('reading') || 'Reading', A: 85, fullSubject: t('reading') || 'Reading', fullMark: 100 },
+    { subject: t('writing') || 'Writing', A: 65, fullSubject: t('writing') || 'Writing', fullMark: 100 },
+    { subject: t('speaking') || 'Speaking', A: 90, fullSubject: t('speaking') || 'Speaking', fullMark: 100 },
+    { subject: t('listening') || 'Listening', A: 75, fullSubject: t('listening') || 'Listening', fullMark: 100 },
+    { subject: t('grammar') || 'Grammar', A: 60, fullSubject: t('grammar') || 'Grammar', fullMark: 100 },
+    { subject: t('memory') || 'Memory', A: 80, fullSubject: t('memory') || 'Memory', fullMark: 100 },
+  ];
 
   if (loading) return <div className="p-8 text-neutral-400">Loading metrics...</div>;
 

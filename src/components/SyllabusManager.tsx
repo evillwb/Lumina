@@ -15,6 +15,7 @@ export const SyllabusManager: React.FC = () => {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
   const titleRef = useRef<HTMLInputElement>(null);
 
   // Form states
@@ -219,11 +220,15 @@ export const SyllabusManager: React.FC = () => {
 
   if (loading) return <div className="p-8 text-neutral-400">Loading...</div>;
 
-  const filteredTopics = topics.filter(t => 
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (t.notes || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTopics = topics.filter(t => {
+    const searchMatch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
+      
+    const priorityMatch = filterPriority === 'all' || (t.priority || 'normal') === filterPriority;
+
+    return searchMatch && priorityMatch;
+  });
 
   if (!user) {
     return (
@@ -399,25 +404,37 @@ export const SyllabusManager: React.FC = () => {
       )}
 
       {/* Search Bar */}
-      <div className="mb-6 relative">
-        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-neutral-400">
-           <Search className="w-4 h-4" />
+      <div className="mb-6 flex gap-3">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-neutral-400">
+             <Search className="w-4 h-4" />
+          </div>
+          <input 
+            type="text"
+            placeholder="Search topics by title, subject, or keywords in notes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 pl-10 pr-4 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        <input 
-          type="text"
-          placeholder="Search topics by title, subject, or keywords in notes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 pl-10 pr-4 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-        />
-        {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm w-40"
+        >
+          <option value="all">All Priorities</option>
+          <option value="emergency">Emergency</option>
+          <option value="normal">Normal</option>
+          <option value="low">Low</option>
+        </select>
       </div>
 
       {/* List */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Timer, Plus, Minus } from 'lucide-react';
+import { Play, Pause, RotateCcw, Timer } from 'lucide-react';
 
 export const PomodoroTimer: React.FC = () => {
   const [focusDuration, setFocusDuration] = useState(25);
@@ -67,9 +67,18 @@ export const PomodoroTimer: React.FC = () => {
   const adjTime = (amount: number) => {
       if (isRunning) return;
       if (isFocus) {
-         setFocusDuration(Math.max(1, Math.min(120, focusDuration + amount)));
+         setFocusDuration(Math.max(1, Math.min(600, focusDuration + amount)));
       } else {
-         setBreakDuration(Math.max(1, Math.min(60, breakDuration + amount)));
+         setBreakDuration(Math.max(1, Math.min(600, breakDuration + amount)));
+      }
+  };
+
+  const setPreset = (mins: number) => {
+      if (isRunning) return;
+      if (isFocus) {
+          setFocusDuration(mins);
+      } else {
+          setBreakDuration(mins);
       }
   };
 
@@ -80,19 +89,35 @@ export const PomodoroTimer: React.FC = () => {
     <div className="flex flex-col items-center p-6 bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm relative">
       <div className="flex items-center gap-2 mb-4 text-blue-600 dark:text-blue-500">
          <Timer className="w-5 h-5" />
-         <span className="font-semibold">{isFocus ? "Focus Time" : "Short Break"}</span>
+         <span className="font-semibold">{isFocus ? "Focus Time" : "Break Time"}</span>
+      </div>
+
+      {/* Preset Timers */}
+      <div className="flex gap-2 mb-6">
+          <button disabled={isRunning} onClick={() => setPreset(15)} className="px-3 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors">15m</button>
+          <button disabled={isRunning} onClick={() => setPreset(25)} className="px-3 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors">25m</button>
+          <button disabled={isRunning} onClick={() => setPreset(60)} className="px-3 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors">1h</button>
+          <button disabled={isRunning} onClick={() => setPreset(120)} className="px-3 py-1 text-xs font-medium rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors">2h</button>
       </div>
       
-      <div className="flex items-center gap-6 mb-6">
-        <button disabled={isRunning} onClick={() => adjTime(-5)} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">
-           <Minus className="w-5 h-5" />
-        </button>
-        <div className="text-5xl font-mono font-bold text-neutral-900 dark:text-white tracking-tight tabular-nums w-48 text-center">
-          {mins}:{secs}
+      <div className="flex flex-col items-center gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2">
+            <button disabled={isRunning} onClick={() => adjTime(-60)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">-1h</button>
+            <button disabled={isRunning} onClick={() => adjTime(-10)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">-10m</button>
+            <button disabled={isRunning} onClick={() => adjTime(-1)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">-1m</button>
+          </div>
+          
+          <div className="text-6xl font-mono font-bold text-neutral-900 dark:text-white tracking-tight tabular-nums w-48 text-center shrink-0">
+            {mins}:{secs}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button disabled={isRunning} onClick={() => adjTime(60)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">+1h</button>
+            <button disabled={isRunning} onClick={() => adjTime(10)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">+10m</button>
+            <button disabled={isRunning} onClick={() => adjTime(1)} className="px-2 py-1 text-xs rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">+1m</button>
+          </div>
         </div>
-        <button disabled={isRunning} onClick={() => adjTime(5)} className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors text-neutral-500">
-           <Plus className="w-5 h-5" />
-        </button>
       </div>
 
       <div className="flex gap-4 mb-4">

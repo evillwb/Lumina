@@ -120,7 +120,19 @@ service cloud.firestore {
         && data.question is string && data.question.size() > 0 && data.question.size() <= 1000
         && data.userAnswer is string && data.userAnswer.size() <= 500
         && data.isCorrect is bool
+        && ( !('explanation' in data) || (data.explanation is string && data.explanation.size() <= 5000) )
         && data.createdAt == request.time;
+    }
+
+    function isValidQuizLogUpdate(data, existingData) {
+      return data.userId == existingData.userId
+        && data.topicId == existingData.topicId
+        && data.blockId == existingData.blockId
+        && data.question == existingData.question
+        && data.userAnswer == existingData.userAnswer
+        && data.isCorrect == existingData.isCorrect
+        && data.createdAt == existingData.createdAt
+        && ( !('explanation' in data) || (data.explanation is string && data.explanation.size() <= 5000) );
     }
 
     // --- Collections ---
@@ -154,7 +166,7 @@ service cloud.firestore {
         allow list: if isOwner(userId) && isValidId(userId);
         allow get: if isOwner(userId) && isValidId(userId) && isValidId(logId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(logId) && isValidQuizLog(incoming(), userId);
-        // Immutable collection, no updates
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(logId) && isValidQuizLogUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['explanation']);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(logId);
       }
     }
