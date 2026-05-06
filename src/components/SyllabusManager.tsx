@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, doc, setDoc, deleteDoc, getDocs, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Topic, PRESET_SUBJECTS, ScheduleBlock, DAYS, STUDY_HOURS, DayOfWeek } from '../types';
-import { Plus, Trash2, Edit2, X, Check, Search, CalendarPlus } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Search, CalendarPlus, Zap, Loader2, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import MDEditor from '@uiw/react-md-editor';
 import { useTheme } from '../contexts/ThemeContext';
+import { GoogleGenAI } from '@google/genai';
 
 export const SyllabusManager: React.FC = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const titleRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -22,6 +25,40 @@ export const SyllabusManager: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState<string>('normal');
   const [difficulty, setDifficulty] = useState<Topic['difficulty']>('Beginner');
+  const [quizDifficulty, setQuizDifficulty] = useState<Topic['quizDifficulty']>('Medium');
+  const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+
+  const generateNotes = async () => {
+    if (!title.trim()) {
+      alert("Please provide a topic title first.");
+      return;
+    }
+    setIsGeneratingNotes(true);
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        alert("GEMINI_API_KEY is not set.");
+        setIsGeneratingNotes(false);
+        return;
+      }
+      
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Generate a concise set of study notes for the topic "${title}" under the subject "${subject === 'Custom' ? 'a particular subject' : subject}". The notes should include key concepts, formulas, or reminders that are essential for studying this topic. Format the response using markdown.`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+      
+      if (response.text) {
+        setNotes(response.text);
+      }
+    } catch (error) {
+      console.error("Error generating notes:", error);
+      alert("Failed to generate notes. Please try again.");
+    } finally {
+      setIsGeneratingNotes(false);
+    }
+  };
 
   const fetchTopics = async () => {
     if (!user) {
@@ -57,6 +94,7 @@ export const SyllabusManager: React.FC = () => {
         notes,
         priority,
         difficulty,
+        quizDifficulty,
         masteryLevel: isNew ? 0 : topics.find(t => t.id === isEditing)?.masteryLevel || 0,
         updatedAt: serverTimestamp(),
       };
@@ -98,6 +136,7 @@ export const SyllabusManager: React.FC = () => {
     setNotes(t.notes || '');
     setPriority(t.priority || 'normal');
     setDifficulty(t.difficulty || 'Beginner');
+    setQuizDifficulty(t.quizDifficulty || 'Medium');
   };
 
   const resetForm = () => {
@@ -107,6 +146,7 @@ export const SyllabusManager: React.FC = () => {
     setNotes('');
     setPriority('normal');
     setDifficulty('Beginner');
+    setQuizDifficulty('Medium');
   };
 
   const generateSchedule = async () => {
@@ -125,12 +165,27 @@ export const SyllabusManager: React.FC = () => {
       
       let currentHour = STUDY_HOURS.start; // 14
       
-      const priorityMap: Record<string, number> = { 'emergency': 3, 'normal': 2, 'low': 1 };
-      const sortedTopics = [...topics].sort((a,b) => (priorityMap[b.priority || 'normal'] || 2) - (priorityMap[a.priority || 'normal'] || 2));
+      const priorityWeights: Record<string, number> = { 'emergency': 4, 'normal': 2, 'low': 1 };
+      
+      // Create a expanded worklist where higher priority topics appear more frequently
+      const worklist: Topic[] = [];
+      topics.forEach(topic => {
+        const weight = priorityWeights[topic.priority || 'normal'] || 2;
+        for (let i = 0; i < weight; i++) {
+          worklist.push({ ...topic });
+        }
+      });
 
-      for (const topic of sortedTopics) {
+      // Sort worklist so higher priority topics (Emergency) appear first
+      worklist.sort((a, b) => {
+        const weightA = priorityWeights[a.priority || 'normal'] || 2;
+        const weightB = priorityWeights[b.priority || 'normal'] || 2;
+        return weightB - weightA;
+      });
+
+      for (const topic of worklist) {
         const startStr = `${currentHour.toString().padStart(2, '0')}:00`;
-        let nextHour = currentHour + 2;
+        let nextHour = Math.min(currentHour + 2, 24);
         const endStr = nextHour === 24 ? '23:59' : `${nextHour.toString().padStart(2, '0')}:00`;
 
         const dateString = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -141,7 +196,7 @@ export const SyllabusManager: React.FC = () => {
           userId: user.uid,
           topicId: topic.id,
           title: topic.title,
-          day: dateString, // Storing as date string instead of abstract day
+          day: dateString, 
           startTime: startStr,
           endTime: endStr,
           status: 'upcoming',
@@ -151,7 +206,7 @@ export const SyllabusManager: React.FC = () => {
         });
 
         currentHour += 2;
-        if (currentHour > STUDY_HOURS.end) {
+        if (currentHour >= STUDY_HOURS.end) {
           currentHour = STUDY_HOURS.start;
           currentDate.setDate(currentDate.getDate() + 1); // Move to next day
         }
@@ -163,6 +218,12 @@ export const SyllabusManager: React.FC = () => {
   };
 
   if (loading) return <div className="p-8 text-neutral-400">Loading...</div>;
+
+  const filteredTopics = topics.filter(t => 
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (t.notes || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!user) {
     return (
@@ -192,17 +253,31 @@ export const SyllabusManager: React.FC = () => {
       {/* Form */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 mb-8">
         <h3 className="text-neutral-900 dark:text-white font-medium mb-4">{isEditing ? 'Edit Topic' : 'Add New Topic'}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+          <div className="lg:col-span-1">
             <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Topic Title</label>
             <input 
+              ref={titleRef}
               value={title} onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500" 
               placeholder="e.g. Thermodynamics"
             />
           </div>
-          <div>
-            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Preset Subject</label>
+          <div className="lg:col-span-1">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-neutral-500 font-bold uppercase block">Preset Subject</label>
+              <button 
+                type="button"
+                title="Quick Add Topic Title"
+                onClick={() => {
+                  setTitle(`${subject === 'Custom' ? 'New Topic' : subject} Basics`);
+                  titleRef.current?.focus();
+                }}
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <Zap className="w-4 h-4" />
+              </button>
+            </div>
             <select 
               value={subject} onChange={(e) => {
                 setSubject(e.target.value);
@@ -216,8 +291,8 @@ export const SyllabusManager: React.FC = () => {
               <option value="Custom">Custom</option>
             </select>
           </div>
-          <div>
-            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Difficulty</label>
+          <div className="lg:col-span-1">
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Material Difficulty</label>
             <select 
               value={difficulty} onChange={(e) => setDifficulty(e.target.value as Topic['difficulty'])}
               className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
@@ -227,7 +302,18 @@ export const SyllabusManager: React.FC = () => {
               <option value="Advanced">Advanced</option>
             </select>
           </div>
-          <div>
+          <div className="lg:col-span-1">
+            <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Quiz Difficulty</label>
+            <select 
+              value={quizDifficulty} onChange={(e) => setQuizDifficulty(e.target.value as Topic['quizDifficulty'])}
+              className="w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+          <div className="lg:col-span-1">
             <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">Priority</label>
             <select 
               value={priority} onChange={(e) => setPriority(e.target.value)}
@@ -251,7 +337,18 @@ export const SyllabusManager: React.FC = () => {
         )}
 
         <div className="mb-4" data-color-mode={theme === 'dark' ? 'dark' : 'light'}>
-          <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">My Notes (Refines AI Questions)</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-neutral-500 font-bold uppercase block">My Notes (Refines AI Questions)</label>
+            <button
+              type="button"
+              onClick={generateNotes}
+              disabled={isGeneratingNotes || !title.trim()}
+              className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 text-xs font-semibold uppercase disabled:opacity-50"
+            >
+              {isGeneratingNotes ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isGeneratingNotes ? 'Generating...' : 'Auto-Generate'}
+            </button>
+          </div>
           <MDEditor 
             value={notes} 
             onChange={(val) => setNotes(val || '')}
@@ -301,14 +398,37 @@ export const SyllabusManager: React.FC = () => {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div className="mb-6 relative">
+        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-neutral-400">
+           <Search className="w-4 h-4" />
+        </div>
+        <input 
+          type="text"
+          placeholder="Search topics by title, subject, or keywords in notes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 pl-10 pr-4 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+        />
+        {searchTerm && (
+          <button 
+            onClick={() => setSearchTerm('')}
+            className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* List */}
       <div className="space-y-3">
-        {topics.map(t => (
+        {filteredTopics.map(t => (
           <div key={t.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 justify-between items-center flex rounded-xl shadow-sm">
             <div>
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                  <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">{t.subject}</span>
                  {t.difficulty && <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">{t.difficulty}</span>}
+                 {t.quizDifficulty && <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Quiz: {t.quizDifficulty}</span>}
                  {t.priority === 'emergency' && <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Emergency</span>}
                  {t.priority === 'low' && <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">Low</span>}
               </div>
@@ -328,6 +448,11 @@ export const SyllabusManager: React.FC = () => {
         {topics.length === 0 && (
           <div className="py-12 text-center text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
             No topics yet. Start building your syllabus!
+          </div>
+        )}
+        {topics.length > 0 && filteredTopics.length === 0 && (
+          <div className="py-12 text-center text-neutral-500 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-800">
+            No topics match your search query.
           </div>
         )}
       </div>

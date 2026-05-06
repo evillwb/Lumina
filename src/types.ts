@@ -6,6 +6,12 @@
 export type Status = 'upcoming' | 'mastered' | 'failed';
 export type TopicPriority = 'low' | 'normal' | 'emergency';
 
+export interface SpacedRepetitionSettings {
+  lowMasteryDays: number;
+  mediumMasteryDays: number;
+  highMasteryDays: number;
+}
+
 export interface UserProfile {
   userId: string;
   email: string;
@@ -25,6 +31,7 @@ export interface UserProfile {
   lastStreakDate?: string; // Tracks the last date a block was completed
   petHappiness?: number; // 0 to 100
   timezone?: string;
+  spacedRepetition?: SpacedRepetitionSettings;
   lastActiveDate?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -39,6 +46,7 @@ export interface Topic {
   notes?: string;
   priority?: TopicPriority;
   difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+  quizDifficulty?: 'Easy' | 'Medium' | 'Hard';
   masteryLevel: number;
   failedAttempts?: number;
   lastReviewed?: string; // ISO string

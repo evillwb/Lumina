@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ScheduleBlock, UserProfile } from '../types';
 import { getCalendarAccessToken } from '../lib/firebase';
-import { Download, CalendarDays, Moon, Sun, Languages, Cloud, Globe } from 'lucide-react';
+import { Download, CalendarDays, Moon, Sun, Languages, Cloud, Globe, BrainCircuit } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useTranslation } from '../locales/i18n';
@@ -17,20 +17,34 @@ export const Settings: React.FC = () => {
 
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [timezone, setTimezone] = React.useState('UTC');
+  const [spacedRepetition, setSpacedRepetition] = React.useState({
+    lowMasteryDays: 1,
+    mediumMasteryDays: 3,
+    highMasteryDays: 7
+  });
 
   useEffect(() => {
     if (user) {
-      const fetchTz = async () => {
+      const fetchProfile = async () => {
          try {
             const d = await getDoc(doc(db, 'users', user.uid));
             if (d.exists()) {
-               const tz = (d.data() as UserProfile).timezone;
+               const data = d.data() as UserProfile;
+               const tz = data.timezone;
                if (tz) setTimezone(tz);
                else setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+               
+               if (data.spacedRepetition) {
+                 setSpacedRepetition({
+                   lowMasteryDays: data.spacedRepetition.lowMasteryDays ?? 1,
+                   mediumMasteryDays: data.spacedRepetition.mediumMasteryDays ?? 3,
+                   highMasteryDays: data.spacedRepetition.highMasteryDays ?? 7
+                 });
+               }
             }
          } catch(e) {}
       };
-      fetchTz();
+      fetchProfile();
     }
   }, [user]);
 
@@ -45,6 +59,20 @@ export const Settings: React.FC = () => {
            });
         } catch (error) {}
      }
+  };
+
+  const handleSpacedRepetitionChange = async (key: keyof typeof spacedRepetition, value: number) => {
+    const newVal = Math.max(1, value); // Ensure minimum is 1
+    const newSettings = { ...spacedRepetition, [key]: newVal };
+    setSpacedRepetition(newSettings);
+    if (user) {
+       try {
+          await updateDoc(doc(db, 'users', user.uid), {
+             spacedRepetition: newSettings,
+             updatedAt: serverTimestamp()
+          });
+       } catch (error) {}
+    }
   };
 
   const syncToGoogleCalendar = async () => {
@@ -280,6 +308,62 @@ export const Settings: React.FC = () => {
                 <option key={tz} value={tz}>{tz}</option>
              ))}
           </select>
+        </div>
+
+        <div className="h-px w-full bg-neutral-200 dark:bg-neutral-800 my-6" />
+
+        <div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
+              <BrainCircuit className="w-6 h-6 text-purple-600 dark:text-purple-500" />
+            </div>
+            <div>
+              <h3 className="text-neutral-900 dark:text-white font-medium">Spaced Repetition</h3>
+              <p className="text-xs text-neutral-500">Number of days to wait before reviewing a topic based on its mastery level.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-neutral-50 dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Low Mastery</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number"
+                  min="1"
+                  value={spacedRepetition.lowMasteryDays}
+                  onChange={(e) => handleSpacedRepetitionChange('lowMasteryDays', parseInt(e.target.value) || 1)}
+                  className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-purple-500"
+                />
+                <span className="text-sm text-neutral-500">Days</span>
+              </div>
+            </div>
+            <div className="bg-neutral-50 dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Medium Mastery</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number"
+                  min="1"
+                  value={spacedRepetition.mediumMasteryDays}
+                  onChange={(e) => handleSpacedRepetitionChange('mediumMasteryDays', parseInt(e.target.value) || 1)}
+                  className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-purple-500"
+                />
+                <span className="text-sm text-neutral-500">Days</span>
+              </div>
+            </div>
+            <div className="bg-neutral-50 dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 block">High Mastery</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number"
+                  min="1"
+                  value={spacedRepetition.highMasteryDays}
+                  onChange={(e) => handleSpacedRepetitionChange('highMasteryDays', parseInt(e.target.value) || 1)}
+                  className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-purple-500"
+                />
+                <span className="text-sm text-neutral-500">Days</span>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>

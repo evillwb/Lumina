@@ -37,6 +37,7 @@ service cloud.firestore {
         && ( !('activePet' in data) || (data.activePet is map) )
         && ( !('lastPetDecayDate' in data) || (data.lastPetDecayDate is string && data.lastPetDecayDate.size() <= 100) )
         && ( !('timezone' in data) || (data.timezone is string && data.timezone.size() <= 100) )
+        && ( !('spacedRepetition' in data) || (data.spacedRepetition is map) )
         && data.createdAt == request.time
         && data.updatedAt == request.time;
     }
@@ -59,7 +60,8 @@ service cloud.firestore {
         && ( !('myPets' in data) || (data.myPets is list && data.myPets.size() <= 100) )
         && ( !('activePet' in data) || (data.activePet is map) )
         && ( !('lastPetDecayDate' in data) || (data.lastPetDecayDate is string && data.lastPetDecayDate.size() <= 100) )
-        && ( !('timezone' in data) || (data.timezone is string && data.timezone.size() <= 100) );
+        && ( !('timezone' in data) || (data.timezone is string && data.timezone.size() <= 100) )
+        && ( !('spacedRepetition' in data) || (data.spacedRepetition is map) );
     }
 
     function isValidTopic(data, userId) {
@@ -69,6 +71,7 @@ service cloud.firestore {
         && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
         && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100
         && ( !('difficulty' in data) || (data.difficulty is string && data.difficulty.size() <= 50) )
+        && ( !('quizDifficulty' in data) || (data.quizDifficulty is string && data.quizDifficulty.size() <= 50) )
         && data.createdAt == request.time
         && data.updatedAt == request.time;
     }
@@ -80,7 +83,8 @@ service cloud.firestore {
         && data.title is string && data.title.size() > 0 && data.title.size() <= 200
         && data.subject is string && data.subject.size() > 0 && data.subject.size() <= 100
         && data.masteryLevel is int && data.masteryLevel >= 0 && data.masteryLevel <= 100
-        && ( !('difficulty' in data) || (data.difficulty is string && data.difficulty.size() <= 50) );
+        && ( !('difficulty' in data) || (data.difficulty is string && data.difficulty.size() <= 50) )
+        && ( !('quizDifficulty' in data) || (data.quizDifficulty is string && data.quizDifficulty.size() <= 50) );
     }
 
     function isValidScheduleBlock(data, userId) {
@@ -123,7 +127,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
       allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
-      allow update: if isOwner(userId) && isValidId(userId) && isValidUserUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastActiveDate', 'updatedAt', 'credits', 'purchasedThemes', 'activePremiumTheme', 'lastClaimedDaily', 'lastClaimedWeekly', 'lastClaimedMonthly', 'lastClaimedPetQuest', 'petFood', 'petWater', 'myPets', 'activePet', 'lastPetDecayDate', 'timezone']);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserUpdate(incoming(), existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['streak', 'lastActiveDate', 'updatedAt', 'credits', 'purchasedThemes', 'activePremiumTheme', 'lastClaimedDaily', 'lastClaimedWeekly', 'lastClaimedMonthly', 'lastClaimedPetQuest', 'petFood', 'petWater', 'myPets', 'activePet', 'lastPetDecayDate', 'timezone', 'spacedRepetition']);
       allow delete: if isOwner(userId) && isValidId(userId);
       
       // We do not have any list method for users since users only read their own profile directly
@@ -133,7 +137,7 @@ service cloud.firestore {
         allow get: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
         allow create: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopic(incoming(), userId);
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(topicId) && isValidTopicUpdate(incoming(), existing()) && 
-          incoming().diff(existing()).affectedKeys().hasAny(['title', 'subject', 'presetId', 'notes', 'masteryLevel', 'difficulty', 'lastReviewed', 'updatedAt']);
+          incoming().diff(existing()).affectedKeys().hasAny(['title', 'subject', 'presetId', 'notes', 'masteryLevel', 'difficulty', 'quizDifficulty', 'lastReviewed', 'updatedAt']);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(topicId);
       }
 

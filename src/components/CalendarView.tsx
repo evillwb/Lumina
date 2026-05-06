@@ -18,6 +18,71 @@ const formatDateLocal = (d: Date) => {
     return `${year}-${month}-${day}`;
 };
 
+const BreakOverlay = ({ 
+  breakEndTime, 
+  onSkip 
+}: { 
+  breakEndTime: number | null, 
+  onSkip: () => void 
+}) => {
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    if (!breakEndTime) return;
+    
+    // Initial calculation
+    const initRemaining = breakEndTime - Date.now();
+    if (initRemaining <= 0) {
+      onSkip();
+      return;
+    }
+    setTimeLeft(initRemaining);
+
+    const interval = setInterval(() => {
+      const remaining = breakEndTime - Date.now();
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+        onSkip();
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [breakEndTime, onSkip]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 50, scale: 0.9 }}
+      className="fixed bottom-6 right-6 z-[150] bg-white dark:bg-neutral-900 border-2 border-indigo-500 dark:border-indigo-500 p-6 rounded-2xl shadow-2xl w-80"
+    >
+      <div className="flex items-center gap-3 mb-2">
+         <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
+            <BrainCircuit className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+         </div>
+         <div>
+            <h3 className="font-bold text-neutral-900 dark:text-white">Break Time</h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Rest your brain before the next session.</p>
+         </div>
+      </div>
+      <div className="text-center py-4">
+        <span className="text-4xl font-black tracking-tight text-indigo-600 dark:text-indigo-500 font-mono">
+          {Math.floor(timeLeft / 60000)}:
+          {Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0')}
+        </span>
+      </div>
+      <button 
+        onClick={onSkip} 
+        className="w-full py-2 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 uppercase tracking-wider"
+      >
+        Skip Break
+      </button>
+    </motion.div>
+  );
+};
+
 export const CalendarView: React.FC = () => {
   const { user } = useAuth();
   const { language } = usePreferences();
@@ -49,64 +114,6 @@ export const CalendarView: React.FC = () => {
   const [breakEndTime, setBreakEndTime] = useState<number | null>(null);
   const [highlightedBlockId, setHighlightedBlockId] = useState<string | null>(null);
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
-
-  const BreakOverlay = ({ 
-  breakEndTime, 
-  onSkip 
-}: { 
-  breakEndTime: number | null, 
-  onSkip: () => void 
-}) => {
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    if (!breakEndTime) return;
-    const interval = setInterval(() => {
-      const remaining = breakEndTime - Date.now();
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        clearInterval(interval);
-        onSkip();
-      } else {
-        setTimeLeft(remaining);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [breakEndTime, onSkip]);
-
-  if (!breakEndTime || timeLeft <= 0) return null;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed bottom-6 right-6 z-[150] bg-white dark:bg-neutral-900 border-2 border-indigo-500 dark:border-indigo-500 p-6 rounded-2xl shadow-2xl w-80"
-    >
-      <div className="flex items-center gap-3 mb-2">
-         <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
-            <BrainCircuit className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-         </div>
-         <div>
-            <h3 className="font-bold text-neutral-900 dark:text-white">Break Time</h3>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Rest your brain before the next session.</p>
-         </div>
-      </div>
-      <div className="text-center py-4">
-        <span className="text-4xl font-black tracking-tight text-indigo-600 dark:text-indigo-500 font-mono">
-          {Math.floor(timeLeft / 60000)}:
-          {Math.floor((timeLeft % 60000) / 1000).toString().padStart(2, '0')}
-        </span>
-      </div>
-      <button 
-        onClick={onSkip} 
-        className="w-full py-2 text-xs font-bold text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 uppercase tracking-wider"
-      >
-        Skip Break
-      </button>
-    </motion.div>
-  );
-};
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, newDay: string) => {
     e.preventDefault();
@@ -976,10 +983,14 @@ export const CalendarView: React.FC = () => {
       </AnimatePresence>
 
       {/* Break Overlay */}
-      <BreakOverlay 
-        breakEndTime={breakEndTime} 
-        onSkip={() => { setBreakEndTime(null); triggerEndBreakHighlight(); }} 
-      />
+      <AnimatePresence>
+        {breakEndTime && (
+          <BreakOverlay 
+            breakEndTime={breakEndTime} 
+            onSkip={() => { setBreakEndTime(null); triggerEndBreakHighlight(); }} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
