@@ -258,13 +258,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
         <nav className="space-y-1 flex-1">
           {[
-            { name: t('dashboard'), id: 'Dashboard', icon: LayoutDashboard },
-            { name: t('syllabus'), id: 'My Syllabus', icon: BookOpen },
-            { name: t('calendar'), id: 'Calendar', icon: CalendarIcon },
-            { name: t('quizzes'), id: 'Quizzes', icon: Lightbulb },
-            { name: t('focus_time'), id: 'Focus Time', icon: Timer },
-            { name: t('store_title'), id: 'Store & Quests', icon: Store },
-            { name: t('settings'), id: 'Settings', icon: Settings }
+            { name: t('dashboard') || 'Dashboard', id: 'Dashboard', icon: LayoutDashboard },
+            { name: t('syllabus') || 'My Syllabus', id: 'My Syllabus', icon: BookOpen },
+            { name: t('smart_notes') || 'Smart Notes', id: 'Smart Notes', icon: BookOpen },
+            { name: t('calendar') || 'Calendar', id: 'Calendar', icon: CalendarIcon },
+            { name: t('quizzes') || 'Quizzes', id: 'Quizzes', icon: Lightbulb },
+            { name: t('focus_time') || 'Focus Time', id: 'Focus Time', icon: Timer },
+            { name: t('store_title') || 'Store & Quests', id: 'Store & Quests', icon: Store },
+            { name: t('settings') || 'Settings', id: 'Settings', icon: Settings }
           ].map((item) => (
             <button
               key={item.id}

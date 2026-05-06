@@ -85,6 +85,118 @@ export const generateQuizQuestions = async (
   }
 };
 
+export const summarizeStudyNotes = async (rawText: string, files?: { mimeType: string, data: string }[]): Promise<{ summaryBulletPoints: string[], keyTerms: string[] }> => {
+  const prompt = `You are an expert tutor. Summarize the following study notes. Return ONLY a valid JSON object with this exact structure: {"summaryBulletPoints": ["string", "string", "string"], "keyTerms": ["string", "string", "string"]}. Here are the notes: ${rawText}`;
+
+  try {
+    const contents: any[] = [{ text: prompt }];
+
+    if (files && files.length > 0) {
+       for (const f of files) {
+          contents.push({
+             inlineData: {
+                data: f.data,
+                mimeType: f.mimeType
+             }
+          });
+       }
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: contents,
+      config: {
+        responseMimeType: 'application/json',
+      }
+    });
+
+    const { text } = response as any;
+    if (!text) throw new Error("No text returned from Gemini");
+
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed.summaryBulletPoints) && Array.isArray(parsed.keyTerms)) {
+      return parsed;
+    } else {
+      throw new Error("Malformed JSON structure");
+    }
+  } catch (error) {
+    console.error("Error summarizing study notes:", error);
+    return {
+      summaryBulletPoints: ["Could not summarize notes."],
+      keyTerms: ["Error"]
+    };
+  }
+};
+
+export const answerFollowUpQuestion = async (
+  question: string,
+  rawText: string,
+  summaryText: string,
+  files?: { mimeType: string, data: string }[]
+): Promise<string> => {
+  const prompt = `You are an expert tutor. Answer the student's follow-up question based on the original notes and the summary provided below. 
+
+Original Notes:
+${rawText}
+
+Summary:
+${summaryText}
+
+Student's Question:
+${question}
+
+Answer concisely, helpfully, and directly.`;
+
+  try {
+    const contents: any[] = [{ text: prompt }];
+
+    if (files && files.length > 0) {
+       for (const f of files) {
+          contents.push({
+             inlineData: {
+                data: f.data,
+                mimeType: f.mimeType
+             }
+          });
+       }
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: contents
+    });
+
+    return (response as any).text || "I'm sorry, I couldn't generate an answer.";
+  } catch (error) {
+    console.error("Error answering follow up question:", error);
+    return "An error occurred while answering your question.";
+  }
+};
+
+export const generateTopicImage = async (promptText: string): Promise<string> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          { text: `Create an educational, clean, abstract visual representation of the following topic concept: ${promptText}. Do not include any text in the image.` }
+        ]
+      }
+    });
+
+    for (const part of (response as any).candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error("No image part found in response");
+  } catch (error) {
+    console.error("Error generating topic image:", error);
+    throw error;
+  }
+};
+
+
 export interface DynamicQuizData {
   question: string;
   options: [string, string, string, string];

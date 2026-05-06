@@ -15,6 +15,7 @@ import { Settings } from './components/Settings';
 import { Quizzes } from './components/Quizzes';
 import { StoreQuests } from './components/StoreQuests';
 import { PomodoroTimer } from './components/PomodoroTimer';
+import { SmartNotes } from './components/SmartNotes';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PreferencesProvider } from './contexts/PreferencesContext';
 
@@ -57,6 +58,7 @@ export default function App() {
                 <PomodoroTimer />
               </div>
             )}
+            {activeTab === 'Smart Notes' && <SmartNotes />}
             {activeTab === 'Store & Quests' && <StoreQuests />}
             {activeTab === 'Settings' && <Settings />}
           </div>
