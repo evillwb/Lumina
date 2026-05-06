@@ -469,7 +469,7 @@ export const Quizzes: React.FC = () => {
                            )}
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
                           <button 
                              onClick={startQuiz}
                              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-3 rounded-lg flex justify-center items-center gap-2 shadow-lg hover:shadow-blue-900/20 transition-all active:scale-95"

@@ -752,7 +752,7 @@ export const CalendarView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 z-20"
+              className="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 z-20 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-start mb-4">
                  <div>
@@ -834,7 +834,7 @@ export const CalendarView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 overflow-hidden z-20"
+              className="relative w-full max-w-md bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 overflow-hidden z-20 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-6">
                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-white">Add Study Session</h2>
@@ -917,7 +917,7 @@ export const CalendarView: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 md:p-8 overflow-hidden z-20"
+              className="relative w-full max-w-lg bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 md:p-8 z-20 max-h-[90vh] overflow-y-auto"
             >
               <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600" />
               

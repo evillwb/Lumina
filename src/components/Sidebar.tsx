@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { History, BrainCircuit, BookOpen, Settings, LayoutDashboard, LogOut, LogIn, Store, Lightbulb, Calendar as CalendarIcon, Timer, Cat, Menu } from 'lucide-react';
+import { History, BrainCircuit, BookOpen, Settings, LayoutDashboard, LogOut, LogIn, Store, Lightbulb, Calendar as CalendarIcon, Timer, Cat, Menu, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -260,6 +260,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           {[
             { name: t('dashboard') || 'Dashboard', id: 'Dashboard', icon: LayoutDashboard },
             { name: t('syllabus') || 'My Syllabus', id: 'My Syllabus', icon: BookOpen },
+            { name: 'Subject Notebook', id: 'Subject Notes', icon: FileText },
             { name: t('smart_notes') || 'Smart Notes', id: 'Smart Notes', icon: BookOpen },
             { name: t('calendar') || 'Calendar', id: 'Calendar', icon: CalendarIcon },
             { name: t('quizzes') || 'Quizzes', id: 'Quizzes', icon: Lightbulb },

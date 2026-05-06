@@ -16,6 +16,7 @@ import { Quizzes } from './components/Quizzes';
 import { StoreQuests } from './components/StoreQuests';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { SmartNotes } from './components/SmartNotes';
+import { SubjectNotes } from './components/SubjectNotes';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { PreferencesProvider } from './contexts/PreferencesContext';
 
@@ -51,6 +52,7 @@ export default function App() {
             
             {activeTab === 'Dashboard' && <Dashboard onNavigateToCalendar={() => setActiveTab('Calendar')} />}
             {activeTab === 'My Syllabus' && <SyllabusManager />}
+            {activeTab === 'Subject Notes' && <SubjectNotes />}
             {activeTab === 'Calendar' && <CalendarView />}
             {activeTab === 'Quizzes' && <Quizzes />}
             {activeTab === 'Focus Time' && (
