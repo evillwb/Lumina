@@ -8,6 +8,8 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
+  writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
 import { ScheduleBlock, UserProfile } from "../types";
@@ -21,6 +23,8 @@ import {
   Cloud,
   Globe,
   Lightbulb,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -39,6 +43,10 @@ export const Settings: React.FC = () => {
     mediumMasteryDays: 3,
     highMasteryDays: 7,
   });
+
+  const [showResetModal, setShowResetModal] = React.useState(false);
+  const [resetStep, setResetStep] = React.useState(0);
+  const [isResetting, setIsResetting] = React.useState(false);
 
   useEffect(() => {
     if (user) {
@@ -239,6 +247,62 @@ export const Settings: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleResetData = async () => {
+    if (!user) return;
+    setIsResetting(true);
+    try {
+      // 1. Delete subcollections (in reality writeBatch has a 500 limit, but assuming typical applet limit is fine)
+      const subcollections = ["topics", "scheduleBlocks", "quizLogs"];
+      for (const collName of subcollections) {
+        let hasMore = true;
+        while (hasMore) {
+          const snap = await getDocs(collection(db, "users", user.uid, collName));
+          if (snap.docs.length === 0) {
+            hasMore = false;
+            break;
+          }
+          const batch = writeBatch(db);
+          snap.docs.slice(0, 450).forEach((d) => {
+            batch.delete(d.ref);
+          });
+          await batch.commit();
+          if (snap.docs.length <= 450) {
+            hasMore = false;
+          }
+        }
+      }
+
+      // 2. Reset user profile fields
+      await updateDoc(doc(db, "users", user.uid), {
+        streak: 0,
+        credits: 0,
+        purchasedThemes: [],
+        activePremiumTheme: null,
+        lastClaimedDaily: null,
+        lastClaimedWeekly: null,
+        lastClaimedMonthly: null,
+        lastClaimedPetQuest: null,
+        petFood: 0,
+        petWater: 0,
+        myPets: [],
+        activePet: null,
+        lastPetDecayDate: null,
+        lastStreakDate: null,
+        petHappiness: 100,
+        updatedAt: serverTimestamp(),
+      });
+
+      alert("Your data has been successfully reset.");
+      setShowResetModal(false);
+      setResetStep(0);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to reset data. Please try again.");
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
@@ -506,7 +570,95 @@ export const Settings: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <div className="h-px w-full bg-neutral-200 dark:bg-neutral-800 my-6" />
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-red-50 dark:bg-red-500/10 rounded-xl">
+              <Trash2 className="w-6 h-6 text-red-600 dark:text-red-500" />
+            </div>
+            <div>
+              <h3 className="text-neutral-900 dark:text-white font-medium">
+                Reset Data
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Permanently delete your topics, schedules, and progress.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setResetStep(1);
+              setShowResetModal(true);
+            }}
+            className="px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg text-sm transition-colors border border-red-200 dark:border-red-900/50 font-medium"
+          >
+            Reset Data
+          </button>
+        </div>
       </div>
+
+      {/* Reset Data Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1a1c] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 dark:bg-red-500/20 rounded-full mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-center text-neutral-900 dark:text-white mb-2">
+              Are you absolutely sure?
+            </h3>
+            
+            {resetStep === 1 ? (
+              <>
+                <p className="text-center text-neutral-600 dark:text-neutral-400 mb-8 whitespace-pre-wrap">
+                  This will permanently delete all your topics, notes, schedules, and quiz history. This action cannot be undone.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setResetStep(2)}
+                    className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all"
+                  >
+                    Yes, I want to reset my data
+                  </button>
+                  <button
+                    onClick={() => setShowResetModal(false)}
+                    className="w-full px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-medium transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-center text-red-600 dark:text-red-500 mb-8 font-medium">
+                  Last warning! All your progress will be wiped out immediately.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleResetData}
+                    disabled={isResetting}
+                    className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all flex items-center justify-center disabled:opacity-50"
+                  >
+                    {isResetting ? "Resetting..." : "Permanently Delete Everything"}
+                  </button>
+                  <button
+                    onClick={() => {
+                        setShowResetModal(false);
+                        setResetStep(1);
+                    }}
+                    disabled={isResetting}
+                    className="w-full px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-medium transition-all disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
