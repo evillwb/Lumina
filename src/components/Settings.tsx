@@ -25,6 +25,7 @@ import {
   Lightbulb,
   Trash2,
   AlertTriangle,
+  Gift,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { usePreferences } from "../contexts/PreferencesContext";
@@ -47,6 +48,9 @@ export const Settings: React.FC = () => {
   const [showResetModal, setShowResetModal] = React.useState(false);
   const [resetStep, setResetStep] = React.useState(0);
   const [isResetting, setIsResetting] = React.useState(false);
+
+  const [redeemCode, setRedeemCode] = React.useState("");
+  const [isRedeeming, setIsRedeeming] = React.useState(false);
 
   useEffect(() => {
     if (user) {
@@ -302,6 +306,33 @@ export const Settings: React.FC = () => {
       alert("Failed to reset data. Please try again.");
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleRedeemCode = async () => {
+    if (!user) return;
+    if (!redeemCode.trim()) return;
+
+    setIsRedeeming(true);
+    try {
+      if (redeemCode.trim().toUpperCase() === "CHEATER") {
+        const d = await getDoc(doc(db, "users", user.uid));
+        const data = d.data() as UserProfile;
+        const currentCredits = data.credits || 0;
+        await updateDoc(doc(db, "users", user.uid), {
+          credits: currentCredits + 99999,
+          updatedAt: serverTimestamp(),
+        });
+        alert("Success! 99999 credits have been added to your account.");
+      } else {
+        alert("Invalid redeem code.");
+      }
+      setRedeemCode("");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to redeem code.");
+    } finally {
+      setIsRedeeming(false);
     }
   };
 
@@ -568,6 +599,40 @@ export const Settings: React.FC = () => {
                 <span className="text-sm text-neutral-500">Days</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="h-px w-full bg-neutral-200 dark:bg-neutral-800 my-6" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-amber-50 dark:bg-amber-500/10 rounded-xl">
+              <Gift className="w-6 h-6 text-amber-600 dark:text-amber-500" />
+            </div>
+            <div>
+              <h3 className="text-neutral-900 dark:text-white font-medium">
+                Redeem Code
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Enter a promo code to earn special rewards.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <input
+              type="text"
+              value={redeemCode}
+              onChange={(e) => setRedeemCode(e.target.value)}
+              placeholder="Enter code"
+              className="flex-1 sm:w-40 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-amber-500"
+            />
+            <button
+              onClick={handleRedeemCode}
+              disabled={isRedeeming || !redeemCode.trim()}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {isRedeeming ? "Redeeming..." : "Redeem"}
+            </button>
           </div>
         </div>
 
