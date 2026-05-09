@@ -277,16 +277,16 @@ export const CalendarView: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const loadSPMSyllabus = async () => {
+  const loadSampleSyllabus = async () => {
     if (!user) return;
     setLoading(true);
     try {
       // Add topics
-      const spmTopics = [
+      const sampleTopics = [
         {
           id: uuidv4(),
-          title: "Newtonian Mechanics",
-          subject: "Physics",
+          title: "Reading Comprehension",
+          subject: "English",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -294,8 +294,8 @@ export const CalendarView: React.FC = () => {
         },
         {
           id: uuidv4(),
-          title: "Organic Chemistry",
-          subject: "Chemistry",
+          title: "Speaking fluently",
+          subject: "English",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -303,8 +303,8 @@ export const CalendarView: React.FC = () => {
         },
         {
           id: uuidv4(),
-          title: "Cell Biology",
-          subject: "Biology",
+          title: "Writing essays",
+          subject: "English",
           priority: "normal",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -312,8 +312,8 @@ export const CalendarView: React.FC = () => {
         },
         {
           id: uuidv4(),
-          title: "Calculus Differentiation",
-          subject: "Add Maths",
+          title: "Listening active",
+          subject: "English",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -321,7 +321,7 @@ export const CalendarView: React.FC = () => {
         },
       ];
       const tMap: Record<string, Topic> = { ...topics };
-      for (const t of spmTopics) {
+      for (const t of sampleTopics) {
         await setDoc(doc(db, "users", user.uid, "topics", t.id), t);
         tMap[t.id] = t as any;
       }
@@ -343,8 +343,8 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           userId: user.uid,
-          title: spmTopics[0].title,
-          topicId: spmTopics[0].id,
+          title: sampleTopics[0].title,
+          topicId: sampleTopics[0].id,
           day: mondayStr,
           startTime: "15:00",
           endTime: "17:00",
@@ -355,8 +355,8 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           userId: user.uid,
-          title: spmTopics[1].title,
-          topicId: spmTopics[1].id,
+          title: sampleTopics[1].title,
+          topicId: sampleTopics[1].id,
           day: mondayStr,
           startTime: "19:00",
           endTime: "21:00",
@@ -367,8 +367,8 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           userId: user.uid,
-          title: spmTopics[2].title,
-          topicId: spmTopics[2].id,
+          title: sampleTopics[2].title,
+          topicId: sampleTopics[2].id,
           day: tuesdayStr,
           startTime: "15:00",
           endTime: "17:00",
@@ -379,8 +379,8 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           userId: user.uid,
-          title: spmTopics[3].title,
-          topicId: spmTopics[3].id,
+          title: sampleTopics[3].title,
+          topicId: sampleTopics[3].id,
           day: tuesdayStr,
           startTime: "20:00",
           endTime: "22:00",
@@ -884,7 +884,7 @@ export const CalendarView: React.FC = () => {
               <Plus className="w-5 h-5" /> Add First Session
             </button>
             <button
-              onClick={loadSPMSyllabus}
+              onClick={loadSampleSyllabus}
               className="flex items-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-medium shadow-sm transition-all active:scale-95"
             >
               Load Example Syllabus

@@ -90,6 +90,7 @@ export const Quizzes: React.FC = () => {
 
   const [filterTopicId, setFilterTopicId] = useState<string>("all");
   const [filterCorrectness, setFilterCorrectness] = useState<string>("all");
+  const [filterDateRange, setFilterDateRange] = useState<string>("all");
   const [bossBattleActive, setBossBattleActive] = useState(false);
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
   const [examModeActive, setExamModeActive] = useState(false);
@@ -988,6 +989,21 @@ export const Quizzes: React.FC = () => {
                 <option value="incorrect">Incorrect</option>
               </select>
             </div>
+            <div className="flex-1">
+              <label className="text-xs text-neutral-500 font-bold uppercase mb-2 block">
+                Filter by Date Range
+              </label>
+              <select
+                value={filterDateRange}
+                onChange={(e) => setFilterDateRange(e.target.value)}
+                className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-2.5 text-neutral-900 dark:text-white text-sm focus:outline-none focus:border-blue-500 shadow-sm"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+              </select>
+            </div>
           </div>
 
           {logs.filter((log) => {
@@ -996,6 +1012,20 @@ export const Quizzes: React.FC = () => {
             if (filterCorrectness === "correct" && !log.isCorrect) return false;
             if (filterCorrectness === "incorrect" && log.isCorrect)
               return false;
+            if (filterDateRange !== "all" && log.createdAt?.toDate) {
+              const logDate = log.createdAt.toDate();
+              const now = new Date();
+              // Calculate difference in calendar days
+              logDate.setHours(0, 0, 0, 0);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const diffTime = Math.abs(today.getTime() - logDate.getTime());
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              if (filterDateRange === "today" && diffDays > 0) return false;
+              if (filterDateRange === "week" && diffDays > 7) return false;
+              if (filterDateRange === "month" && diffDays > 30) return false;
+            }
             return true;
           }).length === 0 ? (
             <div className="py-12 text-center text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
@@ -1010,6 +1040,19 @@ export const Quizzes: React.FC = () => {
                   return false;
                 if (filterCorrectness === "incorrect" && log.isCorrect)
                   return false;
+                if (filterDateRange !== "all" && log.createdAt?.toDate) {
+                  const logDate = log.createdAt.toDate();
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const compareDate = new Date(logDate);
+                  compareDate.setHours(0, 0, 0, 0);
+                  const diffTime = today.getTime() - compareDate.getTime();
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  if (filterDateRange === "today" && diffDays > 0) return false;
+                  if (filterDateRange === "week" && diffDays > 7) return false;
+                  if (filterDateRange === "month" && diffDays > 30) return false;
+                }
                 return true;
               })
               .map((log) => (

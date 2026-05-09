@@ -104,14 +104,9 @@ export const STUDY_HOURS = {
 };
 
 export const PRESET_SUBJECTS = [
-  "Physics",
-  "Chemistry",
-  "Mathematics",
-  "Biology",
-  "History",
-  "Geography",
-  "Economics",
-  "Computer Science",
-  "Literature",
+  "Reading",
+  "Speaking",
+  "Writing",
+  "Listening",
   "Custom",
 ];

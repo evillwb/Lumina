@@ -168,7 +168,14 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
   }, [user]);
 
   const subjectMasteryData = useMemo(() => {
-    if (topics.length === 0) return [];
+    if (topics.length === 0) {
+      return [
+        { subject: "Reading", A: 65, fullSubject: "Reading Comprehension", fullMark: 100 },
+        { subject: "Speaking", A: 80, fullSubject: "Speaking fluently", fullMark: 100 },
+        { subject: "Writing", A: 45, fullSubject: "Writing essays", fullMark: 100 },
+        { subject: "Listening", A: 70, fullSubject: "Listening active", fullMark: 100 },
+      ];
+    }
 
     // group by subject
     const subjectMap: Record<string, { totalMastery: number; count: number }> =
@@ -220,7 +227,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
   const totalMastery =
     topics.length > 0
       ? topics.reduce((acc, t) => acc + t.masteryLevel, 0) / topics.length
-      : 0;
+      : 65;
 
   let data: any[] = [];
   if (topics.length > 0) {
@@ -232,6 +239,16 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       { name: "Fri", retention: Math.max(0, totalMastery - 5) },
       { name: "Sat", retention: Math.max(0, totalMastery - 2) },
       { name: "Sun", retention: totalMastery || 0 },
+    ];
+  } else {
+    data = [
+      { name: "Mon", retention: 35 },
+      { name: "Tue", retention: 45 },
+      { name: "Wed", retention: 50 },
+      { name: "Thu", retention: 55 },
+      { name: "Fri", retention: 60 },
+      { name: "Sat", retention: 63 },
+      { name: "Sun", retention: 65 },
     ];
   }
 
