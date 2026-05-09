@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Status = 'upcoming' | 'mastered' | 'failed';
-export type TopicPriority = 'low' | 'normal' | 'emergency';
+export type Status = "upcoming" | "mastered" | "failed";
+export type TopicPriority = "low" | "normal" | "emergency";
 
 export interface SpacedRepetitionSettings {
   lowMasteryDays: number;
@@ -45,8 +45,8 @@ export interface Topic {
   subject: string;
   notes?: string;
   priority?: TopicPriority;
-  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
-  quizDifficulty?: 'Easy' | 'Medium' | 'Hard';
+  difficulty?: "Beginner" | "Intermediate" | "Advanced";
+  quizDifficulty?: "Easy" | "Medium" | "Hard";
   masteryLevel: number;
   failedAttempts?: number;
   lastReviewed?: string; // ISO string
@@ -79,13 +79,39 @@ export interface QuizLog {
   createdAt?: string;
 }
 
-export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+export type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
 
-export const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+export const DAYS: DayOfWeek[] = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 export const STUDY_HOURS = {
   start: 0,
-  end: 23
+  end: 23,
 };
 
-export const PRESET_SUBJECTS = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'History', 'Geography', 'Economics', 'Computer Science', 'Literature', 'Custom'];
+export const PRESET_SUBJECTS = [
+  "Physics",
+  "Chemistry",
+  "Mathematics",
+  "Biology",
+  "History",
+  "Geography",
+  "Economics",
+  "Computer Science",
+  "Literature",
+  "Custom",
+];

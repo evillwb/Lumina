@@ -1,4 +1,4 @@
-import { usePreferences } from '../contexts/PreferencesContext';
+import { usePreferences } from "../contexts/PreferencesContext";
 
 export const translations: Record<string, Record<string, string>> = {
   English: {
@@ -21,15 +21,16 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Earn credits and customize your experience.",
     welcome_to_lumina: "Welcome to Lumina",
     bring_clarity: "Bring Clarity to Your Learning",
-    what_you_can_do: "Input your syllabus, generate a schedule, and take AI-generated quizzes to adaptively master your subjects.",
+    what_you_can_do:
+      "Input your syllabus, generate a schedule, and take AI-generated quizzes to adaptively master your subjects.",
     active_streak: "Active Streak",
-    welcome_back: "Welcome back. Lumina brings clarity to your learning journey.",
+    welcome_back:
+      "Welcome back. Lumina brings clarity to your learning journey.",
     start_learning: "Start Learning",
     days: "Days",
     memory: "Memory",
     reading: "Reading",
-    writing: "Writing"
-  ,
+    writing: "Writing",
     take_quiz: "Take Quiz",
     history: "History",
     start_ai_quiz: "Start AI Quiz",
@@ -50,7 +51,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Quests",
     store: "Store",
     claim: "Claim",
-    focus_time: "Focus Time"
+    focus_time: "Focus Time",
   },
   Malay: {
     dashboard: "Papan Pemuka",
@@ -72,15 +73,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Dapatkan kredit dan hiasi pengalaman anda.",
     welcome_to_lumina: "Selamat Datang ke Lumina",
     bring_clarity: "Bawa Kejelasan pada Pembelajaran Anda",
-    what_you_can_do: "Masukkan sukatan pelajaran anda, jana jadual, dan ambil kuiz AI untuk menguasai subjek secara adaptif.",
+    what_you_can_do:
+      "Masukkan sukatan pelajaran anda, jana jadual, dan ambil kuiz AI untuk menguasai subjek secara adaptif.",
     active_streak: "Aktiviti Semasa",
     welcome_back: "Selamat kembali. Lumina memudahkan pengembaraan ilmu anda.",
     start_learning: "Mula Belajar",
     days: "Hari",
     memory: "Ingatan",
     reading: "Membaca",
-    writing: "Menulis"
-  ,
+    writing: "Menulis",
     take_quiz: "Ambil Kuiz",
     history: "Sejarah",
     start_ai_quiz: "Mula Kuiz AI",
@@ -101,7 +102,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Pencarian",
     store: "Kedai",
     claim: "Tuntut",
-    focus_time: "Masa Tumpuan"
+    focus_time: "Masa Tumpuan",
   },
   Chinese: {
     dashboard: "仪表盘",
@@ -123,15 +124,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "赚取学分并定制您的体验。",
     welcome_to_lumina: "欢迎来到 Lumina",
     bring_clarity: "让您的学习更加清晰",
-    what_you_can_do: "输入您的课程大纲，生成时间表，并参加AI生成的测验以自适应地掌握您的科目。",
+    what_you_can_do:
+      "输入您的课程大纲，生成时间表，并参加AI生成的测验以自适应地掌握您的科目。",
     active_streak: "当前连续活跃",
     welcome_back: "欢迎回来。Lumina 让您的学习之旅更清晰。",
     start_learning: "开始学习",
     days: "天",
     memory: "记忆",
     reading: "阅读",
-    writing: "写作"
-  ,
+    writing: "写作",
     take_quiz: "参加测验",
     history: "历史",
     start_ai_quiz: "开始AI测验",
@@ -152,7 +153,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "任务",
     store: "商店",
     claim: "领取",
-    focus_time: "专注时间"
+    focus_time: "专注时间",
   },
   "Simplified Chinese": {
     dashboard: "仪表盘",
@@ -181,7 +182,7 @@ export const translations: Record<string, Record<string, string>> = {
     days: "天",
     memory: "记忆",
     reading: "阅读",
-    writing: "写作"
+    writing: "写作",
   },
   "Traditional Chinese": {
     dashboard: "儀表板",
@@ -210,7 +211,7 @@ export const translations: Record<string, Record<string, string>> = {
     days: "天",
     memory: "記憶",
     reading: "閱讀",
-    writing: "寫作"
+    writing: "寫作",
   },
   Spanish: {
     dashboard: "Panel",
@@ -239,8 +240,7 @@ export const translations: Record<string, Record<string, string>> = {
     days: "Días",
     memory: "Memoria",
     reading: "Lectura",
-    writing: "Escritura"
-  ,
+    writing: "Escritura",
     take_quiz: "Tomar Prueba",
     history: "Historia",
     start_ai_quiz: "Iniciar Quiz AI",
@@ -261,7 +261,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Misiones",
     store: "Tienda",
     claim: "Reclamar",
-    focus_time: "Enfoque"
+    focus_time: "Enfoque",
   },
   French: {
     dashboard: "Tableau de Bord",
@@ -283,15 +283,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Gagnez des crédits et personnalisez votre expérience.",
     welcome_to_lumina: "Bienvenue sur Lumina",
     bring_clarity: "Apportez de la Clarté à Votre Apprentissage",
-    what_you_can_do: "Entrez votre programme, générez un calendrier et passez des quiz générés par IA.",
+    what_you_can_do:
+      "Entrez votre programme, générez un calendrier et passez des quiz générés par IA.",
     active_streak: "Série Active",
     welcome_back: "Bon retour. Lumina clarifie votre parcours d'apprentissage.",
     start_learning: "Commencer à Apprendre",
     days: "Jours",
     memory: "Mémoire",
     reading: "Lecture",
-    writing: "Écriture"
-  ,
+    writing: "Écriture",
     take_quiz: "Passer Quiz",
     history: "Historique",
     start_ai_quiz: "Démarrer AI Quiz",
@@ -312,7 +312,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Quêtes",
     store: "Boutique",
     claim: "Réclamer",
-    focus_time: "Concentration"
+    focus_time: "Concentration",
   },
   German: {
     dashboard: "Dashboard",
@@ -334,15 +334,16 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Verdiene Credits und passe deine Erfahrung an.",
     welcome_to_lumina: "Willkommen bei Lumina",
     bring_clarity: "Bringe Klarheit in dein Lernen",
-    what_you_can_do: "Gib deinen Lehrplan ein, erstelle einen Zeitplan und mache KI-generierte Quizze.",
+    what_you_can_do:
+      "Gib deinen Lehrplan ein, erstelle einen Zeitplan und mache KI-generierte Quizze.",
     active_streak: "Aktive Serie",
-    welcome_back: "Willkommen zurück. Lumina bringt Klarheit in deine Lernreise.",
+    welcome_back:
+      "Willkommen zurück. Lumina bringt Klarheit in deine Lernreise.",
     start_learning: "Lernen beginnen",
     days: "Tage",
     memory: "Gedächtnis",
     reading: "Lesen",
-    writing: "Schreiben"
-  ,
+    writing: "Schreiben",
     take_quiz: "Quiz Starten",
     history: "Verlauf",
     start_ai_quiz: "KI-Quiz Starten",
@@ -363,7 +364,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Quests",
     store: "Shop",
     claim: "Beanspruchen",
-    focus_time: "Fokuszeit"
+    focus_time: "Fokuszeit",
   },
   Japanese: {
     dashboard: "ダッシュボード",
@@ -385,15 +386,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "クレジットを獲得して体験をカスタマイズしましょう。",
     welcome_to_lumina: "Luminaへようこそ",
     bring_clarity: "学習に明確さをもたらす",
-    what_you_can_do: "シラバスを入力し、スケジュールを作成し、AIクイズを受けて学習をマスターしましょう。",
+    what_you_can_do:
+      "シラバスを入力し、スケジュールを作成し、AIクイズを受けて学習をマスターしましょう。",
     active_streak: "現在の連続記録",
     welcome_back: "お帰りなさい。Luminaはあなたの学習の旅をサポートします。",
     start_learning: "学習を開始する",
     days: "日",
     memory: "記憶力",
     reading: "リーディング",
-    writing: "ライティング"
-  ,
+    writing: "ライティング",
     take_quiz: "クイズに答える",
     history: "履歴",
     start_ai_quiz: "AIクイズ開始",
@@ -414,7 +415,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "クエスト",
     store: "ストア",
     claim: "受け取る",
-    focus_time: "集中時間"
+    focus_time: "集中時間",
   },
   Korean: {
     dashboard: "대시보드",
@@ -436,15 +437,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "크레딧을 얻고 경험을 커스터마이즈하세요.",
     welcome_to_lumina: "Lumina에 오신 것을 환영합니다",
     bring_clarity: "학습에 명확성을 더하세요",
-    what_you_can_do: "강의 계획서를 입력하고, 일정을 성하고 AI 생성 퀴즈를 풀어보세요.",
+    what_you_can_do:
+      "강의 계획서를 입력하고, 일정을 성하고 AI 생성 퀴즈를 풀어보세요.",
     active_streak: "현재 연속 기록",
     welcome_back: "환영합니다. Lumina가 당신의 학습 여정을 명확하게 해줍니다.",
     start_learning: "학습 시작",
     days: "일",
     memory: "기억력",
     reading: "읽기",
-    writing: "쓰기"
-  ,
+    writing: "쓰기",
     take_quiz: "퀴즈 풀기",
     history: "기록",
     start_ai_quiz: "AI 퀴즈 시작",
@@ -465,7 +466,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "퀘스트",
     store: "상점",
     claim: "청구",
-    focus_time: "집중 시간"
+    focus_time: "집중 시간",
   },
   Italian: {
     dashboard: "Pannello",
@@ -487,15 +488,16 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Guadagna crediti e personalizza la tua esperienza.",
     welcome_to_lumina: "Benvenuto in Lumina",
     bring_clarity: "Porta Chiarezza nel tuo Apprendimento",
-    what_you_can_do: "Inserisci il tuo programma, genera un orario e fai quiz generati dall'IA.",
+    what_you_can_do:
+      "Inserisci il tuo programma, genera un orario e fai quiz generati dall'IA.",
     active_streak: "Striscia Attiva",
-    welcome_back: "Bentornato. Lumina porta chiarezza nel tuo viaggio di apprendimento.",
+    welcome_back:
+      "Bentornato. Lumina porta chiarezza nel tuo viaggio di apprendimento.",
     start_learning: "Inizia ad Apprendere",
     days: "Giorni",
     memory: "Memoria",
     reading: "Lettura",
-    writing: "Scrittura"
-  ,
+    writing: "Scrittura",
     take_quiz: "Inizia Quiz",
     history: "Storia",
     start_ai_quiz: "Inizia Quiz AI",
@@ -516,7 +518,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Missioni",
     store: "Negozio",
     claim: "Reclama",
-    focus_time: "Tempo Concentrazione"
+    focus_time: "Tempo Concentrazione",
   },
   Portuguese: {
     dashboard: "Painel",
@@ -538,15 +540,16 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Ganhe créditos e personalize sua experiência.",
     welcome_to_lumina: "Bem-vindo ao Lumina",
     bring_clarity: "Traga Clareza para o seu Aprendizado",
-    what_you_can_do: "Insira seu programa, gere um cronograma e faça quizzes gerados por IA.",
+    what_you_can_do:
+      "Insira seu programa, gere um cronograma e faça quizzes gerados por IA.",
     active_streak: "Ofensiva Ativa",
-    welcome_back: "Bem-vindo de volta. O Lumina traz clareza para sua jornada de aprendizado.",
+    welcome_back:
+      "Bem-vindo de volta. O Lumina traz clareza para sua jornada de aprendizado.",
     start_learning: "Começar a Aprender",
     days: "Dias",
     memory: "Memória",
     reading: "Leitura",
-    writing: "Escrita"
-  ,
+    writing: "Escrita",
     take_quiz: "Fazer Quiz",
     history: "Histórico",
     start_ai_quiz: "Iniciar Quiz AI",
@@ -567,7 +570,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Missões",
     store: "Loja",
     claim: "Reivindicar",
-    focus_time: "Tempo de Foco"
+    focus_time: "Tempo de Foco",
   },
   Russian: {
     dashboard: "Панель",
@@ -589,15 +592,15 @@ export const translations: Record<string, Record<string, string>> = {
     store_desc: "Зарабатывайте кредиты и настраивайте свой опыт.",
     welcome_to_lumina: "Добро пожаловать в Lumina",
     bring_clarity: "Внесите ясность в ваше обучение",
-    what_you_can_do: "Введите свой учебный план, создайте расписание и проходите ИИ-викторины.",
+    what_you_can_do:
+      "Введите свой учебный план, создайте расписание и проходите ИИ-викторины.",
     active_streak: "Активная серия",
     welcome_back: "С возвращением. Lumina вносит ясность в ваше обучение.",
     start_learning: "Начать обучение",
     days: "Дни",
     memory: "Память",
     reading: "Чтение",
-    writing: "Письмо"
-  ,
+    writing: "Письмо",
     take_quiz: "Начать викторину",
     history: "История",
     start_ai_quiz: "Начать ИИ викторину",
@@ -618,7 +621,7 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "Квесты",
     store: "Магазин",
     claim: "Получить",
-    focus_time: "Время концентрации"
+    focus_time: "Время концентрации",
   },
   Arabic: {
     dashboard: "لوحة القيادة",
@@ -647,8 +650,7 @@ export const translations: Record<string, Record<string, string>> = {
     days: "أيام",
     memory: "الذاكرة",
     reading: "القراءة",
-    writing: "الكتابة"
-  ,
+    writing: "الكتابة",
     take_quiz: "ابدأ الاختبار",
     history: "السجل",
     start_ai_quiz: "اختبار الذكاء الاصطناعي",
@@ -669,18 +671,18 @@ export const translations: Record<string, Record<string, string>> = {
     quests: "المهام",
     store: "المتجر",
     claim: "المطالبة",
-    focus_time: "وقت التركيز"
-  }
+    focus_time: "وقت التركيز",
+  },
 };
 
 export const useTranslation = () => {
-   const { language } = usePreferences();
-   
-   const t = (key: string): string => {
-      // Default to English if language is undefined or not in our map
-      const langMap = translations[language] || translations['English'];
-      return langMap[key] || translations['English'][key] || key;
-   };
+  const { language } = usePreferences();
 
-   return { t };
+  const t = (key: string): string => {
+    // Default to English if language is undefined or not in our map
+    const langMap = translations[language] || translations["English"];
+    return langMap[key] || translations["English"][key] || key;
+  };
+
+  return { t };
 };
