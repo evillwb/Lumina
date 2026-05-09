@@ -542,6 +542,80 @@ export const StoreQuests: React.FC = () => {
     }
   };
 
+  const DAILY_QUESTS = [
+    { id: "q1", title: "Complete 1 AI Quiz", reward: 20 },
+    { id: "q2", title: "Add a Smart Note", reward: 15 },
+    { id: "q3", title: "Master a Topic", reward: 30 },
+    { id: "q4", title: "Study for 30 Minutes", reward: 25 },
+    { id: "q5", title: "Review a Failed Question", reward: 15 },
+    { id: "q6", title: "Create a Custom Flashcard", reward: 10 },
+  ];
+
+  const getDailyQuests = () => {
+    const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+    
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+        hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+        hash |= 0; 
+    }
+    
+    const shuffled = [...DAILY_QUESTS].sort((a, b) => {
+        const hashA = (hash ^ a.id.charCodeAt(1)) % 100;
+        const hashB = (hash ^ b.id.charCodeAt(1)) % 100;
+        return hashA - hashB;
+    });
+    
+    return shuffled.slice(0, 3);
+  };
+
+  const claimDynamicQuest = async (questId: string, reward: number) => {
+    if (!user || !profile) return;
+    
+    const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+
+    const currentState = profile.dailyQuestsState || { date: '', completed: [] };
+    
+    let updatedCompleted = [...(currentState.completed || [])];
+    if (currentState.date !== todayStr) {
+      updatedCompleted = [];
+    }
+
+    if (updatedCompleted.includes(questId)) {
+       showToast("Already completed!");
+       return;
+    }
+
+    updatedCompleted.push(questId);
+
+    try {
+      const newCredits = (profile.credits || 0) + reward;
+      await updateDoc(doc(db, "users", user.uid), {
+        credits: newCredits,
+        dailyQuestsState: {
+          date: todayStr,
+          completed: updatedCompleted
+        },
+        updatedAt: serverTimestamp(),
+      });
+      setProfile({
+        ...profile,
+        credits: newCredits,
+        dailyQuestsState: {
+          date: todayStr,
+          completed: updatedCompleted
+        }
+      });
+      playSuccessSound();
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+      showToast(`Quest completed! Awarded ${reward} credits`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, "users");
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex-1 p-8 flex items-center justify-center flex-col text-center">
@@ -553,6 +627,12 @@ export const StoreQuests: React.FC = () => {
   }
 
   if (loading) return <div className="p-8">Loading...</div>;
+
+  const todayQuests = getDailyQuests();
+  const currentQState = profile?.dailyQuestsState || { date: '', completed: [] };
+  const tz = profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+  const validCompleted = currentQState.date === todayStr ? currentQState.completed : [];
 
   return (
     <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto relative">
@@ -623,8 +703,40 @@ export const StoreQuests: React.FC = () => {
           <div className="flex items-center gap-2 mb-4">
             <Target className="w-5 h-5 text-indigo-500" />
             <h2 className="text-lg font-medium text-neutral-900 dark:text-white">
-              Active Quests
+              Daily Quests
             </h2>
+          </div>
+          <div className="space-y-3">
+            {todayQuests.map((quest) => {
+              const isCompleted = validCompleted.includes(quest.id);
+              return (
+                <div key={quest.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      onClick={() => !isCompleted && claimDynamicQuest(quest.id, quest.reward)}
+                      className={`w-6 h-6 shrink-0 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${isCompleted ? "bg-emerald-500 border-emerald-500" : "border-neutral-300 dark:border-neutral-700 hover:border-indigo-500"}`}
+                    >
+                      {isCompleted && <Sparkles className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <div>
+                      <h3 className={`font-medium text-sm transition-opacity ${isCompleted ? "text-neutral-500 dark:text-neutral-500 line-through" : "text-neutral-900 dark:text-white"}`}>
+                        {quest.title}
+                      </h3>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 font-bold flex items-center gap-1">
+                         +{quest.reward} Credits
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 mb-4 flex items-center gap-2">
+               <Sparkles className="w-5 h-5 text-yellow-500" />
+               <h2 className="text-lg font-medium text-neutral-900 dark:text-white">
+                Logins & Care
+               </h2>
           </div>
           <div className="space-y-3">
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl flex items-center justify-between shadow-sm">
@@ -891,7 +1003,13 @@ export const StoreQuests: React.FC = () => {
             })}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center gap-2 mb-4 mt-8">
+            <Sparkles className="w-5 h-5 text-pink-500" />
+            <h2 className="text-lg font-medium text-neutral-900 dark:text-white">
+              Themes
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {STORE_THEMES.map((theme) => {
               const isOwned =
                 profile?.purchasedThemes?.includes(theme.id) ||
@@ -903,33 +1021,44 @@ export const StoreQuests: React.FC = () => {
               return (
                 <div
                   key={theme.id}
-                  className={`p-4 rounded-xl border transition-all ${isActive ? "border-pink-500 bg-pink-50 dark:bg-pink-500/10" : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm"}`}
+                  className={`p-5 rounded-2xl border transition-all duration-300 backdrop-blur-sm hover:-translate-y-1 hover:shadow-lg ${
+                    isActive
+                      ? "border-pink-500 bg-gradient-to-br from-pink-50 to-white dark:from-pink-900/20 dark:to-neutral-900 ring-2 ring-pink-500/20"
+                      : "border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-950/50"
+                  }`}
                 >
-                  <div className="flex items-center gap-2 mb-3">
-                    <div
-                      className={`w-4 h-4 rounded-full ${theme.color} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 ring-neutral-200 dark:ring-neutral-700`}
-                    />
-                    <h3 className="font-medium text-sm text-neutral-900 dark:text-white">
-                      {theme.name}
-                    </h3>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-6 h-6 rounded-full shadow-inner ${theme.color} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 ring-neutral-100 dark:ring-neutral-800`}
+                      />
+                      <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">
+                        {theme.name}
+                      </h3>
+                    </div>
+                    {isOwned && !isActive && (
+                      <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-md">
+                        Owned
+                      </span>
+                    )}
                   </div>
 
                   <button
                     onClick={() => buyTheme(theme.id, theme.price)}
                     disabled={isActive}
-                    className={`w-full py-2 rounded-lg text-xs font-bold transition-all ${
+                    className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                       isActive
-                        ? "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 opacity-50 cursor-not-allowed"
+                        ? "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 cursor-default"
                         : isOwned
                           ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                          : "bg-indigo-600 text-white hover:bg-indigo-700"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md"
                     }`}
                   >
                     {isActive
-                      ? "Equipped"
+                      ? "✨ Equipped"
                       : isOwned
-                        ? "Equip"
-                        : `Buy - ${theme.price} Credits`}
+                        ? "Equip Theme"
+                        : <><span>Buy for</span> <div className="flex items-center justify-center bg-orange-500/20 px-1.5 py-0.5 rounded text-orange-400"><Coins className="w-3 h-3 mr-1" />{theme.price}</div></>}
                   </button>
                 </div>
               );

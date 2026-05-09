@@ -42,6 +42,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [displayPet, setDisplayPet] = useState<any>(null);
 
+  const [isEditingPetName, setIsEditingPetName] = useState(false);
+  const [newPetName, setNewPetName] = useState("");
+  const [petImageScale, setPetImageScale] = useState(1);
+
+  const handleSavePetName = async () => {
+    setIsEditingPetName(false);
+    if (!user || !profile || !newPetName.trim()) return;
+    try {
+      const activePet = profile.activePet || { id: 1, name: "Basic Cat", icon: "🐱", happiness: 50 };
+      const newPet = { ...activePet, name: newPetName.trim() };
+      await updateDoc(doc(db, "users", user.uid), { activePet: newPet, updatedAt: serverTimestamp() });
+      setProfile((prev) => prev ? { ...prev, activePet: newPet } : null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleScaleChange = async (newScale: number) => {
+    setPetImageScale(newScale);
+    if (!user || !profile) return;
+    try {
+      const activePet = profile.activePet || { id: 1, name: "Basic Cat", icon: "🐱", happiness: 50 };
+      const newPet = { ...activePet, customScale: newScale };
+      await updateDoc(doc(db, "users", user.uid), { activePet: newPet, updatedAt: serverTimestamp() });
+      setProfile((prev) => prev ? { ...prev, activePet: newPet } : null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (displayPet?.customScale !== undefined) {
+       setPetImageScale(displayPet.customScale);
+    }
+  }, [displayPet?.customScale]);
+
   useEffect(() => {
     if (!user) {
       setCanClaimDaily(false);
@@ -500,101 +536,143 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>💧 {profile.petWater || 0}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="relative text-3xl bg-white dark:bg-black rounded-xl p-3 shadow-sm border border-neutral-200 dark:border-neutral-800 flex-shrink-0 cursor-pointer group flex items-center justify-center w-[64px] h-[64px] overflow-hidden"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Click to change pet image"
-                >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/png, image/jpeg"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                    <span className="text-[10px] text-white font-bold uppercase tracking-wider">Edit</span>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className="relative text-3xl bg-white dark:bg-black rounded-full p-1 shadow-sm border border-neutral-200 dark:border-neutral-800 flex-shrink-0 cursor-pointer group flex items-center justify-center w-20 h-20 overflow-hidden"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Click to change pet image"
+                    >
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/png, image/jpeg"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                        <span className="text-[10px] text-white font-bold uppercase tracking-wider">Edit</span>
+                      </div>
+                      <motion.div
+                        key={petActionCount}
+                        className="w-full h-full flex items-center justify-center rounded-full overflow-hidden"
+                        initial={
+                          petActionType === "feed"
+                            ? { scale: 0.8, y: 10 }
+                            : petActionType === "water"
+                              ? { scale: 0.9, rotate: -15 }
+                              : petActionType === "play"
+                                ? { y: -20, rotate: 15 }
+                                : petActionType === "clean"
+                                  ? { opacity: 0.5, scale: 1.1 }
+                                  : {}
+                        }
+                        animate={{ scale: 1, y: 0, rotate: 0, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                      >
+                        {displayPet?.customImage ? (
+                          <img 
+                            src={displayPet.customImage} 
+                            alt="Pet" 
+                            className="w-full h-full object-cover" 
+                            style={{ transform: `scale(${petImageScale})`, transformOrigin: "center" }}
+                          />
+                        ) : (
+                          displayPet?.icon || "🐱"
+                        )}
+                      </motion.div>
+                      <AnimatePresence>
+                        {petActionCount > 0 && petActionType === "feed" && (
+                          <motion.div
+                            key={`particle-feed-${petActionCount}`}
+                            initial={{ opacity: 1, y: 0, scale: 0.5 }}
+                            animate={{ opacity: 0, y: -30, scale: 1.5 }}
+                            transition={{ duration: 0.8 }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
+                          >
+                            🥩
+                          </motion.div>
+                        )}
+                        {petActionCount > 0 && petActionType === "water" && (
+                          <motion.div
+                            key={`particle-water-${petActionCount}`}
+                            initial={{ opacity: 1, y: -20, scale: 0.5 }}
+                            animate={{ opacity: 0, y: 10, scale: 1.5 }}
+                            transition={{ duration: 0.8 }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 text-sm text-cyan-500 pointer-events-none"
+                          >
+                            💧
+                          </motion.div>
+                        )}
+                        {petActionCount > 0 && petActionType === "play" && (
+                          <motion.div
+                            key={`particle-play-${petActionCount}`}
+                            initial={{ opacity: 1, y: 0, scale: 0.5, rotate: 0 }}
+                            animate={{
+                              opacity: 0,
+                              y: -30,
+                              scale: 1.5,
+                              rotate: 180,
+                            }}
+                            transition={{ duration: 0.8 }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
+                          >
+                            ✨
+                          </motion.div>
+                        )}
+                        {petActionCount > 0 && petActionType === "clean" && (
+                          <motion.div
+                            key={`particle-clean-${petActionCount}`}
+                            initial={{ opacity: 1, y: 0, scale: 0.5, x: -10 }}
+                            animate={{ opacity: 0, y: -20, scale: 1.5, x: 20 }}
+                            transition={{ duration: 0.8 }}
+                            className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
+                          >
+                            🫧
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {displayPet?.customImage && (
+                      <input 
+                        type="range" 
+                        min="0.5" 
+                        max="2" 
+                        step="0.1" 
+                        value={petImageScale} 
+                        onChange={(e) => setPetImageScale(parseFloat(e.target.value))}
+                        onMouseUp={(e) => handleScaleChange(parseFloat((e.target as HTMLInputElement).value))}
+                        onTouchEnd={(e) => handleScaleChange(parseFloat((e.target as HTMLInputElement).value))}
+                        className="w-16 h-1 mt-2 appearance-none bg-neutral-200 dark:bg-neutral-700 rounded-lg outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full cursor-pointer"
+                        title="Zoom Image"
+                      />
+                    )}
                   </div>
-                  <motion.div
-                    key={petActionCount}
-                    className="w-full h-full flex items-center justify-center"
-                    initial={
-                      petActionType === "feed"
-                        ? { scale: 0.8, y: 10 }
-                        : petActionType === "water"
-                          ? { scale: 0.9, rotate: -15 }
-                          : petActionType === "play"
-                            ? { y: -20, rotate: 15 }
-                            : petActionType === "clean"
-                              ? { opacity: 0.5, scale: 1.1 }
-                              : {}
-                    }
-                    animate={{ scale: 1, y: 0, rotate: 0, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                  >
-                    {displayPet?.customImage ? (
-                      <img src={displayPet.customImage} alt="Pet" className="w-full h-full object-cover" />
-                    ) : (
-                      displayPet?.icon || "🐱"
-                    )}
-                  </motion.div>
-                  <AnimatePresence>
-                    {petActionCount > 0 && petActionType === "feed" && (
-                      <motion.div
-                        key={`particle-feed-${petActionCount}`}
-                        initial={{ opacity: 1, y: 0, scale: 0.5 }}
-                        animate={{ opacity: 0, y: -30, scale: 1.5 }}
-                        transition={{ duration: 0.8 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
-                      >
-                        🥩
-                      </motion.div>
-                    )}
-                    {petActionCount > 0 && petActionType === "water" && (
-                      <motion.div
-                        key={`particle-water-${petActionCount}`}
-                        initial={{ opacity: 1, y: -20, scale: 0.5 }}
-                        animate={{ opacity: 0, y: 10, scale: 1.5 }}
-                        transition={{ duration: 0.8 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-sm text-cyan-500 pointer-events-none"
-                      >
-                        💧
-                      </motion.div>
-                    )}
-                    {petActionCount > 0 && petActionType === "play" && (
-                      <motion.div
-                        key={`particle-play-${petActionCount}`}
-                        initial={{ opacity: 1, y: 0, scale: 0.5, rotate: 0 }}
-                        animate={{
-                          opacity: 0,
-                          y: -30,
-                          scale: 1.5,
-                          rotate: 180,
-                        }}
-                        transition={{ duration: 0.8 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
-                      >
-                        ✨
-                      </motion.div>
-                    )}
-                    {petActionCount > 0 && petActionType === "clean" && (
-                      <motion.div
-                        key={`particle-clean-${petActionCount}`}
-                        initial={{ opacity: 1, y: 0, scale: 0.5, x: -10 }}
-                        animate={{ opacity: 0, y: -20, scale: 1.5, x: 20 }}
-                        transition={{ duration: 0.8 }}
-                        className="absolute top-0 left-1/2 -translate-x-1/2 text-sm pointer-events-none"
-                      >
-                        🫧
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="flex-1 w-full min-w-0 flex flex-col gap-1.5">
-                  <div className="text-sm font-semibold text-neutral-900 dark:text-white truncate">
-                    {displayPet?.name || "Basic Cat"}
-                  </div>
+                  <div className="flex-1 w-full min-w-0 flex flex-col gap-1.5">
+                    <div className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2 group/title">
+                      {isEditingPetName ? (
+                        <input 
+                          type="text" 
+                          value={newPetName} 
+                          onChange={(e) => setNewPetName(e.target.value)} 
+                          onBlur={handleSavePetName}
+                          onKeyDown={(e) => e.key === 'Enter' && handleSavePetName()}
+                          className="w-full bg-transparent border-b border-indigo-500 outline-none text-neutral-900 dark:text-white"
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          <span className="truncate">{displayPet?.name || "Basic Cat"}</span>
+                          <button 
+                            onClick={() => { setIsEditingPetName(true); setNewPetName(displayPet?.name || "Basic Cat"); }} 
+                            className="text-neutral-400 hover:text-indigo-500 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
 
                   {/* Fullness */}
                   <div className="flex items-center gap-2">
@@ -648,6 +726,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
 
               <div className="grid grid-cols-4 gap-2 mt-2">

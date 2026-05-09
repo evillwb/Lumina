@@ -730,34 +730,52 @@ export const Quizzes: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {quizData[currentQuestionIdx].options.map((opt, i) => {
-                      let btnClass =
-                        "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
+                      const letter = String.fromCharCode(65 + i);
+                      let containerClass = "flex items-center gap-4 text-left w-full p-4 rounded-xl border-2 transition-all duration-200 group ";
+                      let iconClass = "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors ";
+                      
                       if (selectedFeedback && selectedFeedback.option === opt) {
-                        btnClass = selectedFeedback.isCorrect
-                          ? "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold"
-                          : "text-left w-full md:flex-1 p-4 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 transition-all text-sm font-semibold";
-                      } else if (
-                        selectedFeedback &&
-                        opt === quizData[currentQuestionIdx].correctAnswer
-                      ) {
-                        btnClass =
-                          "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold opacity-50";
+                        if (selectedFeedback.isCorrect) {
+                          containerClass += "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02] z-10";
+                          iconClass += "bg-emerald-500 text-white";
+                        } else {
+                          containerClass += "border-rose-500 bg-rose-50 dark:bg-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.2)] scale-[1.02] z-10";
+                          iconClass += "bg-rose-500 text-white";
+                        }
+                      } else if (selectedFeedback && opt === quizData[currentQuestionIdx].correctAnswer) {
+                        containerClass += "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5 opacity-80";
+                        iconClass += "bg-emerald-500 text-white";
                       } else if (selectedFeedback) {
-                        btnClass =
-                          "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-all text-sm opacity-50 cursor-not-allowed";
+                        containerClass += "border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 opacity-40 cursor-not-allowed";
+                        iconClass += "bg-neutral-200 dark:bg-neutral-800 text-neutral-500";
+                      } else {
+                        containerClass += "border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-blue-500 hover:shadow-md cursor-pointer hover:-translate-y-0.5";
+                        iconClass += "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 group-hover:bg-blue-100 group-hover:text-blue-600 dark:group-hover:bg-blue-500/20 dark:group-hover:text-blue-400";
                       }
+
                       return (
                         <button
                           key={i}
-                          disabled={
-                            selectedFeedback !== null || isProcessingAnswer
-                          }
+                          disabled={selectedFeedback !== null || isProcessingAnswer}
                           onClick={() => submitAnswer(opt)}
-                          className={btnClass}
+                          className={containerClass}
                         >
-                          {opt}
+                          <span className={iconClass}>{letter}</span>
+                          <span className="flex-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 leading-snug">
+                            {opt}
+                          </span>
+                          {selectedFeedback && selectedFeedback.option === opt && (
+                            <span className="flex-shrink-0">
+                              {selectedFeedback.isCorrect ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-rose-500" />}
+                            </span>
+                          )}
+                          {selectedFeedback && selectedFeedback.option !== opt && opt === quizData[currentQuestionIdx].correctAnswer && (
+                            <span className="flex-shrink-0">
+                              <CheckCircle2 className="w-5 h-5 text-emerald-500 opacity-50" />
+                            </span>
+                          )}
                         </button>
                       );
                     })}

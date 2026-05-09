@@ -23,6 +23,10 @@ export interface UserProfile {
   lastClaimedWeekly?: string;
   lastClaimedMonthly?: string;
   lastClaimedPetQuest?: string;
+  dailyQuestsState?: {
+    date: string;
+    completed: string[];
+  };
   petFood?: number;
   petWater?: number;
   myPets?: any[];

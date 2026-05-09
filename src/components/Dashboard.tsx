@@ -230,18 +230,40 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
     }, {} as Record<string, boolean>)
   ).length;
 
-  let data: any[] = [];
-  if (topics.length > 0) {
-    data = [
-      { name: "Mon", retention: Math.max(0, totalMastery - 30) },
-      { name: "Tue", retention: Math.max(0, totalMastery - 20) },
-      { name: "Wed", retention: Math.max(0, totalMastery - 15) },
-      { name: "Thu", retention: Math.max(0, totalMastery - 10) },
-      { name: "Fri", retention: Math.max(0, totalMastery - 5) },
-      { name: "Sat", retention: Math.max(0, totalMastery - 2) },
-      { name: "Sun", retention: totalMastery || 0 },
-    ];
-  }
+  const retentionData = useMemo(() => {
+    if (quizLogs.length === 0) return [];
+    
+    const result = [];
+    const now = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+      const dayStart = new Date(d.setHours(0,0,0,0)).getTime();
+      const dayEnd = new Date(d.setHours(23,59,59,999)).getTime();
+      
+      const dayLogs = quizLogs.filter(l => {
+        if (!l.createdAt) return false;
+        const timestamp = typeof (l.createdAt as any).toDate === 'function' ? (l.createdAt as any).toDate().getTime() : new Date(l.createdAt).getTime();
+        return timestamp >= dayStart && timestamp <= dayEnd;
+      });
+      
+      let averageScore = 0;
+      if (dayLogs.length > 0) {
+         averageScore = (dayLogs.filter(l => l.isCorrect).length / dayLogs.length) * 100;
+      }
+      
+      result.push({
+        name: dayName,
+        retention: Math.round(averageScore)
+      });
+    }
+    
+    if (result.every(r => r.retention === 0)) return [];
+    
+    return result;
+  }, [quizLogs]);
 
   return (
     <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto">
@@ -316,17 +338,17 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
               Retention Trajectory
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Spaced repetition estimated retention over 7 days.
+              Average score over the last 7 days.
             </p>
           </div>
           <div className="h-64 min-h-[250px] w-full">
-            {topics.length === 0 ? (
+            {retentionData.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
                 <p className="text-neutral-500 dark:text-neutral-400 mb-2">
-                  No learning data yet.
+                  Complete a quiz to see your data!
                 </p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                  Go to your Syllabus to add topics.
+                  We need your history to calculate retention.
                 </p>
               </div>
             ) : (
@@ -336,7 +358,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
                 minHeight={1}
                 minWidth={1}
               >
-                <AreaChart data={data}>
+                <AreaChart data={retentionData}>
                   <defs>
                     <linearGradient
                       id="colorRetention"
