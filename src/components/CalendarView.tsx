@@ -907,16 +907,16 @@ export const CalendarView: React.FC = () => {
         </div>
       ) : (
         <div className="bg-white dark:bg-[#09090b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-x-auto relative">
-          <div className="min-w-[700px] md:min-w-[900px] flex">
+          <div className={`min-w-[700px] md:min-w-[900px] ${(viewMode === "Day" || viewMode === "Week") ? "grid grid-cols-[60px_1fr]" : "flex"}`}>
             {/* Time axis */}
             {(viewMode === "Day" || viewMode === "Week") && (
-              <div className="w-16 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30 flex flex-col pt-[72px]">
+              <div className="border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30 flex flex-col pt-[72px]">
                 {Array.from({
                   length: STUDY_HOURS.end - STUDY_HOURS.start + 1,
                 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-[60px] text-[10px] font-bold text-neutral-400 text-right pr-2 -mt-2"
+                    className="h-[60px] text-[10px] font-bold text-neutral-400 text-right pr-2 shrink-0 -mt-2"
                   >
                     {`${(STUDY_HOURS.start + i).toString().padStart(2, "0")}:00`}
                   </div>
@@ -924,7 +924,7 @@ export const CalendarView: React.FC = () => {
               </div>
             )}
 
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col w-full min-w-0">
               {/* Header */}
               <div
                 className={`grid ${viewMode === "Day" ? "grid-cols-1" : viewMode === "Week" ? "grid-cols-7" : "grid-cols-7"} border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/30`}
@@ -1112,7 +1112,7 @@ export const CalendarView: React.FC = () => {
                               </div>
 
                               <h3
-                                className={`font-semibold leading-snug mb-2 ${isMonthView ? "text-[9px] sm:text-xs truncate" : "text-xs"} ${
+                                className={`font-semibold leading-snug mb-1 ${isMonthView ? "text-[9px] sm:text-xs truncate" : "text-xs line-clamp-2"} ${
                                   block.status === "mastered"
                                     ? "text-emerald-900 dark:text-emerald-100"
                                     : block.status === "failed"

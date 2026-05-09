@@ -186,13 +186,55 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
     return result;
   }, [topics]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <div className="text-neutral-500 font-medium tracking-tight animate-pulse">Loading real-world metrics...</div>
+      <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto w-full">
+        <header className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-2 w-full max-w-sm">
+            <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded-md animate-pulse"></div>
+            <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded-md animate-pulse"></div>
+          </div>
+          <div className="h-10 w-32 bg-neutral-200 dark:bg-neutral-800 rounded-lg animate-pulse"></div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-neutral-200 dark:bg-neutral-800 rounded-full animate-pulse"></div>
+                <div className="h-3 w-20 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse"></div>
+              </div>
+              <div className="h-8 w-16 bg-neutral-200 dark:bg-neutral-800 rounded animate-pulse mt-2"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 h-[350px] animate-pulse">
+             <div className="h-6 w-48 bg-neutral-200 dark:bg-neutral-800 rounded mb-2"></div>
+             <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded mb-6"></div>
+             <div className="h-64 w-full bg-neutral-100 dark:bg-neutral-800/50 rounded-xl"></div>
+          </div>
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 h-[350px] animate-pulse">
+             <div className="h-6 w-32 bg-neutral-200 dark:bg-neutral-800 rounded mb-2"></div>
+             <div className="h-4 w-48 bg-neutral-200 dark:bg-neutral-800 rounded mb-6"></div>
+             <div className="h-64 w-full bg-neutral-100 dark:bg-neutral-800/50 rounded-xl rounded-full"></div>
+          </div>
+        </div>
+        
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 h-[400px] animate-pulse">
+             <div className="flex justify-between items-center mb-6">
+                <div>
+                   <div className="h-6 w-48 bg-neutral-200 dark:bg-neutral-800 rounded mb-2"></div>
+                   <div className="h-4 w-64 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+                </div>
+                <div className="h-10 w-32 bg-neutral-200 dark:bg-neutral-800 rounded"></div>
+             </div>
+             <div className="h-72 w-full bg-neutral-100 dark:bg-neutral-800/50 rounded-xl"></div>
+        </div>
       </div>
     );
+  }
 
   if (!user) {
     return (
@@ -505,10 +547,10 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
           {progressionData.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
               <p className="text-neutral-500 dark:text-neutral-400 mb-2">
-                No quiz data yet.
+                Complete a quiz to see your data!
               </p>
               <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                Take quizzes to see your mastery grow.
+                You have no history yet. Take quizzes to see your mastery grow.
               </p>
             </div>
           ) : (
