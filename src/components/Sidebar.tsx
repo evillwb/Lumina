@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { History, BrainCircuit, BookOpen, Settings, LayoutDashboard, LogOut, LogIn, Store, Lightbulb, Calendar as CalendarIcon, Timer, Cat, Menu, FileText } from 'lucide-react';
+import { History, BrainCircuit, BookOpen, Settings, LayoutDashboard, LogOut, LogIn, Store, Lightbulb, Calendar as CalendarIcon, Timer, Cat, Menu, FileText, Map as MapIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -246,15 +246,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
       {/* Sidebar */}
       <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-[transform,background-color] duration-200 ease-in-out border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#09090b] flex flex-col p-6 h-full shadow-2xl md:shadow-none overflow-y-auto`}>
-        <button 
-          onClick={() => { setActiveTab('Dashboard'); setIsOpen(false); }}
-          className="flex items-center gap-3 mb-10 px-2 mt-4 md:mt-0 hover:opacity-80 transition-opacity text-left"
-        >
-          <div className="p-2 bg-yellow-400 dark:bg-yellow-500 rounded-lg shadow-lg shadow-yellow-500/20">
-            <Lightbulb className="w-5 h-5 text-yellow-950" />
-          </div>
-          <span className="font-bold text-sm tracking-widest text-neutral-900 dark:text-white uppercase mt-1">Lumina</span>
-        </button>
+        <div className="flex items-center justify-between mb-10 mt-4 md:mt-0 px-2">
+          <button 
+            onClick={() => { setActiveTab('Dashboard'); setIsOpen(false); }}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
+          >
+            <div className="p-2 bg-yellow-400 dark:bg-yellow-500 rounded-lg shadow-lg shadow-yellow-500/20">
+              <Lightbulb className="w-5 h-5 text-yellow-950" />
+            </div>
+            <span className="font-bold text-sm tracking-widest text-neutral-900 dark:text-white uppercase mt-1">Lumina</span>
+          </button>
+          
+          {profile && (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-lg border border-orange-200 dark:border-orange-500/20 shadow-sm" title="Study Streak">
+              <span className="text-sm font-black tracking-tight">{profile.streak || 0}</span>
+              <span className="text-sm leading-none">🔥</span>
+            </div>
+          )}
+        </div>
 
         <nav className="space-y-1 flex-1">
           {[
@@ -262,6 +271,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             { name: t('syllabus') !== 'syllabus' ? t('syllabus') : 'My Syllabus', id: 'My Syllabus', icon: BookOpen },
             { name: 'Subject Notebook', id: 'Subject Notes', icon: FileText },
             { name: 'Smart Notes', id: 'Smart Notes', icon: BookOpen },
+            { name: 'Mastery Map', id: 'Mastery Map', icon: MapIcon },
             { name: t('calendar') !== 'calendar' ? t('calendar') : 'Calendar', id: 'Calendar', icon: CalendarIcon },
             { name: t('quizzes') !== 'quizzes' ? t('quizzes') : 'Quizzes', id: 'Quizzes', icon: Lightbulb },
             { name: t('focus_time') !== 'focus_time' ? t('focus_time') : 'Focus Time', id: 'Focus Time', icon: Timer },
@@ -274,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 setActiveTab(item.id);
                 setIsOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 tour-${item.id.toLowerCase().replace(/[^a-z0-9]/g, '-')} ${
                 activeTab === item.id 
                   ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium shadow-sm' 
                   : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'

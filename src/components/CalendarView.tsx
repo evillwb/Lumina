@@ -5,7 +5,7 @@ import { useTranslation } from '../locales/i18n';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, doc, getDocs, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { ScheduleBlock, STUDY_HOURS, Topic } from '../types';
-import { CheckCircle2, XCircle, CalendarIcon, Lightbulb, ChevronLeft, ChevronRight, Plus, X, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, CalendarIcon, Lightbulb, ChevronLeft, ChevronRight, Plus, X, RefreshCw, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateQuizQuestions, generateDynamicQuiz } from '../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -106,6 +106,7 @@ export const CalendarView: React.FC = () => {
   const [newBlockDate, setNewBlockDate] = useState(() => formatDateLocal(new Date()));
   const [newBlockStartTime, setNewBlockStartTime] = useState('14:00');
   const [newBlockEndTime, setNewBlockEndTime] = useState('16:00');
+  const [milestoneBadge, setMilestoneBadge] = useState<{ subject: string, topic: string } | null>(null);
 
   // Details Modal State
   const [selectedBlockDetail, setSelectedBlockDetail] = useState<ScheduleBlock | null>(null);
@@ -428,6 +429,10 @@ export const CalendarView: React.FC = () => {
         updatedAt: serverTimestamp()
       });
 
+      if (newMastery === 100 && currMastery < 100) {
+        setMilestoneBadge({ subject: currTopic?.subject || 'Scholar', topic: currTopic?.title || 'Topic' });
+      }
+
       // Update local state early so subsequent reads are accurate natively if needed
       topics[currentQuiz.topicId] = { ...currTopic, masteryLevel: newMastery, failedAttempts: newFailedAttempts };
 
@@ -438,14 +443,22 @@ export const CalendarView: React.FC = () => {
         updatedAt: serverTimestamp()
       });
 
+      const newBlocks = [...schedule];
+      const bIdx = newBlocks.findIndex(b => b.id === currentQuiz.id);
+      if (bIdx > -1) newBlocks[bIdx].status = isCorrect ? 'mastered' : 'failed';
+
+      const localNowStr = getLocalTodayDateString();
+      const todayBlocks = newBlocks.filter(b => b.day === localNowStr);
+      const allTodayDone = todayBlocks.length > 0 && todayBlocks.every(b => b.status === 'mastered');
+
       // Award credits if correct
-      if (isCorrect) {
+      if (isCorrect || allTodayDone) {
           const userRef = doc(db, 'users', user.uid);
           const uDoc = await getDoc(userRef);
           if (uDoc.exists()) {
              const uData = uDoc.data();
              let bonus = 0;
-             if (uData.activePet) {
+             if (isCorrect && uData.activePet) {
                  if (uData.activePet.id === 2) bonus = 2;
                  else if (uData.activePet.id === 3) bonus = 5;
                  else if (uData.activePet.id === 4) bonus = 10;
@@ -455,26 +468,22 @@ export const CalendarView: React.FC = () => {
              const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
              const todayStr = formatter.format(new Date());
              let newStreak = uData.streak || 0;
-             if (uData.lastStreakDate !== todayStr) {
+             let newStreakDate = uData.lastStreakDate;
+             
+             if (allTodayDone && uData.lastStreakDate !== todayStr) {
                 newStreak += 1;
+                newStreakDate = todayStr;
              }
              
+             // Optionally add streak bonus credits here
              await updateDoc(userRef, {
-                 credits: (uData.credits || 0) + 15 + bonus,
+                 credits: (uData.credits || 0) + (isCorrect ? 15 + bonus : 0),
                  streak: newStreak,
-                 lastStreakDate: todayStr,
+                 lastStreakDate: newStreakDate,
                  updatedAt: serverTimestamp()
              });
           }
       }
-
-      const newBlocks = [...schedule];
-      const bIdx = newBlocks.findIndex(b => b.id === currentQuiz.id);
-      if (bIdx > -1) newBlocks[bIdx].status = isCorrect ? 'mastered' : 'failed';
-
-      const localNowStr = getLocalTodayDateString();
-      const todayBlocks = newBlocks.filter(b => b.day === localNowStr);
-      const allTodayDone = todayBlocks.length > 0 && todayBlocks.every(b => b.status === 'mastered');
 
       if (isCorrect || allTodayDone) {
           import('../utils/confetti').then((module) => {
@@ -1034,6 +1043,43 @@ export const CalendarView: React.FC = () => {
             breakEndTime={breakEndTime} 
             onSkip={() => { setBreakEndTime(null); triggerEndBreakHighlight(); }} 
           />
+        )}
+      </AnimatePresence>
+
+      {/* Milestone Badge Overlay */}
+      <AnimatePresence>
+        {milestoneBadge && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+             <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
+               onClick={() => setMilestoneBadge(null)}
+             />
+             <motion.div 
+                initial={{ opacity: 0, scale: 0.8, y: 50, rotateX: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -50 }}
+                transition={{ type: "spring", bounce: 0.5 }}
+                className="relative bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full text-center border-4 border-indigo-400"
+             >
+                <div className="w-24 h-24 bg-yellow-400 rounded-full flex items-center justify-center mb-6 shadow-inner border-4 border-yellow-300">
+                   <Crown className="w-12 h-12 text-yellow-900" />
+                </div>
+                <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Mastery Achieved!</h2>
+                <div className="bg-black/20 rounded-xl p-4 mb-6 w-full">
+                   <p className="text-indigo-100 text-sm font-bold uppercase tracking-widest mb-1">{milestoneBadge.subject} Expert</p>
+                   <p className="text-white font-medium">{milestoneBadge.topic}</p>
+                </div>
+                <button
+                   onClick={() => setMilestoneBadge(null)}
+                   className="w-full py-4 bg-white hover:bg-neutral-100 text-indigo-700 font-bold rounded-xl shadow-lg transition-all active:scale-95"
+                >
+                   Claim Badge
+                </button>
+             </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
