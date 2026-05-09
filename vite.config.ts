@@ -16,7 +16,7 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(__dirname, './src'),
       },
     },
     server: {
@@ -24,7 +24,6 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
-      outDir: path.resolve(__dirname, 'dist'),
       chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
