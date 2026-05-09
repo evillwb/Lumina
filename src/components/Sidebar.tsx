@@ -197,6 +197,67 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return () => clearInterval(interval);
   }, [profile]);
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 150;
+        const MAX_HEIGHT = 150;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL("image/png", 0.8);
+        handlePetCustomImageSave(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePetCustomImageSave = async (dataUrl: string) => {
+    if (!user || !profile) return;
+    try {
+      const activePet = profile.activePet || {
+        id: 1,
+        name: "Basic Cat",
+        icon: "🐱",
+        happiness: 50,
+      };
+      const newPet = { ...activePet, customImage: dataUrl };
+      await updateDoc(doc(db, "users", user.uid), {
+        activePet: newPet,
+      });
+      setProfile((prev) => prev ? { ...prev, activePet: newPet } : null);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save custom image.");
+    }
+  };
+
   const feedPet = async () => {
     if (!user || !profile || !profile.petFood) return;
     if (profile.petFood <= 0) return;
@@ -440,9 +501,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="relative text-3xl bg-white dark:bg-black rounded-xl p-3 shadow-sm border border-neutral-200 dark:border-neutral-800 flex-shrink-0">
+                <div
+                  className="relative text-3xl bg-white dark:bg-black rounded-xl p-3 shadow-sm border border-neutral-200 dark:border-neutral-800 flex-shrink-0 cursor-pointer group flex items-center justify-center w-[64px] h-[64px] overflow-hidden"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Click to change pet image"
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                    <span className="text-[10px] text-white font-bold uppercase tracking-wider">Edit</span>
+                  </div>
                   <motion.div
                     key={petActionCount}
+                    className="w-full h-full flex items-center justify-center"
                     initial={
                       petActionType === "feed"
                         ? { scale: 0.8, y: 10 }
@@ -457,7 +533,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     animate={{ scale: 1, y: 0, rotate: 0, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 300, damping: 15 }}
                   >
-                    {displayPet?.icon || "🐱"}
+                    {displayPet?.customImage ? (
+                      <img src={displayPet.customImage} alt="Pet" className="w-full h-full object-cover" />
+                    ) : (
+                      displayPet?.icon || "🐱"
+                    )}
                   </motion.div>
                   <AnimatePresence>
                     {petActionCount > 0 && petActionType === "feed" && (

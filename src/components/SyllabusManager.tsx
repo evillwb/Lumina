@@ -9,6 +9,7 @@ import {
   getDocs,
   serverTimestamp,
   getDoc,
+  updateDoc
 } from "firebase/firestore";
 import {
   Topic,
@@ -29,11 +30,13 @@ import {
   Zap,
   Loader2,
   Sparkles,
+  BookOpen
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import MDEditor from "@uiw/react-md-editor";
 import { useTheme } from "../contexts/ThemeContext";
 import { GoogleGenAI } from "@google/genai";
+import { generateLessonPlan } from "../services/geminiService";
 
 export const SyllabusManager: React.FC = () => {
   const { user } = useAuth();
@@ -52,9 +55,9 @@ export const SyllabusManager: React.FC = () => {
   const [notes, setNotes] = useState("");
   const [priority, setPriority] = useState<string>("normal");
   const [difficulty, setDifficulty] = useState<Topic["difficulty"]>("Beginner");
-  const [quizDifficulty, setQuizDifficulty] =
-    useState<Topic["quizDifficulty"]>("Medium");
+  const [quizDifficulty, setQuizDifficulty] = useState<Topic["quizDifficulty"]>("Medium");
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
+  const [generatingLessonPlanForId, setGeneratingLessonPlanForId] = useState<string | null>(null);
 
   const generateNotes = async () => {
     if (!title.trim()) {
@@ -73,7 +76,7 @@ export const SyllabusManager: React.FC = () => {
       const prompt = `Generate a concise set of study notes for the topic "${title}" under the subject "${subject === "Custom" ? "a particular subject" : subject}". The content should be tailored to a learning material difficulty level of "${difficulty}" and a quiz proficiency expectation of "${quizDifficulty}". The notes should include key concepts, formulas, or reminders that are essential for studying this topic. Format the response using markdown.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
       });
 
@@ -107,6 +110,34 @@ export const SyllabusManager: React.FC = () => {
   useEffect(() => {
     fetchTopics();
   }, [user]);
+
+  const handleGenerateLessonPlan = async (topic: Topic) => {
+    if (!user) return;
+    setGeneratingLessonPlanForId(topic.id);
+    try {
+      // 1-10 difficulty mapping based on text
+      let difficultyScore = 5;
+      if (topic.difficulty === "Beginner") difficultyScore = 3;
+      if (topic.difficulty === "Intermediate") difficultyScore = 6;
+      if (topic.difficulty === "Advanced") difficultyScore = 9;
+
+      const lessonPlan = await generateLessonPlan(
+        topic.title,
+        difficultyScore,
+        topic.priority || "normal"
+      );
+
+      const topicRef = doc(db, "users", user.uid, "topics", topic.id);
+      await updateDoc(topicRef, { lessonPlan, updatedAt: serverTimestamp() });
+      
+      setTopics(topics.map(t => t.id === topic.id ? { ...t, lessonPlan } : t));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate lesson plan.");
+    } finally {
+      setGeneratingLessonPlanForId(null);
+    }
+  };
 
   const saveTopic = async () => {
     if (!user || !title.trim()) return;
@@ -544,57 +575,109 @@ export const SyllabusManager: React.FC = () => {
         {filteredTopics.map((t) => (
           <div
             key={t.id}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 justify-between items-center flex rounded-xl shadow-sm"
+            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 rounded-xl shadow-sm flex flex-col gap-3"
           >
-            <div>
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">
-                  {t.subject}
-                </span>
-                {t.difficulty && (
-                  <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                    {t.difficulty}
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest">
+                    {t.subject}
                   </span>
-                )}
-                {t.quizDifficulty && (
-                  <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                    Quiz: {t.quizDifficulty}
-                  </span>
-                )}
-                {t.priority === "emergency" && (
-                  <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                    Emergency
-                  </span>
-                )}
-                {t.priority === "low" && (
-                  <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
-                    Low
-                  </span>
+                  {t.difficulty && (
+                    <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                      {t.difficulty}
+                    </span>
+                  )}
+                  {t.quizDifficulty && (
+                    <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                      Quiz: {t.quizDifficulty}
+                    </span>
+                  )}
+                  {t.priority === "emergency" && (
+                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                      Emergency
+                    </span>
+                  )}
+                  {t.priority === "low" && (
+                    <span className="bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                      Low
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-neutral-900 dark:text-white font-medium">
+                  {t.title}
+                </h3>
+                {t.notes && (
+                  <p className="text-neutral-500 text-xs mt-1 truncate max-w-md">
+                    {t.notes}
+                  </p>
                 )}
               </div>
-              <h3 className="text-neutral-900 dark:text-white font-medium">
-                {t.title}
-              </h3>
-              {t.notes && (
-                <p className="text-neutral-500 text-xs mt-1 truncate max-w-md">
-                  {t.notes}
-                </p>
-              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleGenerateLessonPlan(t)}
+                  disabled={generatingLessonPlanForId === t.id || !!t.lessonPlan}
+                  className={`p-2 rounded-lg transition-colors flex items-center justify-center ${generatingLessonPlanForId === t.id ? 'bg-amber-100/50 dark:bg-amber-900/20 text-amber-500 cursor-not-allowed' : t.lessonPlan ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 cursor-not-allowed' : 'bg-amber-100 dark:bg-amber-500/10 hover:bg-amber-200 dark:hover:bg-amber-500/20 text-amber-600 dark:text-amber-500'}`}
+                  title="Generate Lesson Plan"
+                >
+                  {generatingLessonPlanForId === t.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : t.lessonPlan ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Sparkles className="w-4 h-4" />
+                  )}
+                  <span className="sr-only">Generate Lesson Plan</span>
+                </button>
+                <button
+                  onClick={() => startEdit(t)}
+                  className="p-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-lg transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setTopicToDelete(t.id)}
+                  className="p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => startEdit(t)}
-                className="p-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-lg transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setTopicToDelete(t.id)}
-                className="p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-600 dark:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+
+            {t.lessonPlan && (
+              <div className="mt-2 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                  <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-300">AI Lesson Plan</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Objectives</h5>
+                    <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
+                      {t.lessonPlan.learningObjectives.map((obj, i) => (
+                        <li key={i}>{obj}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Key Activities</h5>
+                    <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
+                      {t.lessonPlan.keyActivities.map((act, i) => (
+                        <li key={i}>{act}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Assessment</h5>
+                    <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
+                      {t.lessonPlan.assessmentMethods.map((asm, i) => (
+                        <li key={i}>{asm}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         {topics.length === 0 && (

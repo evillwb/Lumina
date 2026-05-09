@@ -16,7 +16,7 @@ import { Plus, Clock, FileText, Check, Download } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "../locales/i18n";
 import { motion, AnimatePresence } from "motion/react";
-import { MarkdownRenderer } from "./MarkdownRenderer";
+import MDEditor from "@uiw/react-md-editor";
 
 interface Subject {
   id: string;
@@ -236,15 +236,18 @@ export const SubjectNotes: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 md:px-16 py-8 max-w-4xl w-full mx-auto print:overflow-visible my-print-container">
-              <textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Start typing your notes here..."
-                className="w-full h-full min-h-[50vh] bg-transparent resize-none border-none outline-none focus:ring-0 text-neutral-800 dark:text-neutral-200 text-lg leading-relaxed placeholder:text-neutral-400 dark:placeholder:text-neutral-600 print:hidden"
-              />
+            <div className="flex-1 overflow-y-auto px-8 md:px-16 py-8 max-w-4xl w-full mx-auto print:overflow-visible my-print-container flex flex-col">
+              <div className="print:hidden flex-1 h-full font-sans pb-10" data-color-mode="auto">
+                <MDEditor
+                  value={noteContent}
+                  onChange={(val) => setNoteContent(val || "")}
+                  height="100%"
+                  preview="edit"
+                  className="!bg-transparent !border-none !shadow-none [&_.w-md-editor-toolbar]:!bg-transparent [&_.w-md-editor-toolbar]:!border-b-neutral-200 dark:[&_.w-md-editor-toolbar]:!border-b-neutral-800"
+                />
+              </div>
               <div className="hidden print:block text-black text-lg leading-relaxed font-serif">
-                <MarkdownRenderer content={noteContent} />
+                <MDEditor.Markdown source={noteContent} className="!text-black !bg-white" />
               </div>
             </div>
           </>

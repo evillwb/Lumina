@@ -585,7 +585,11 @@ export const StoreQuests: React.FC = () => {
               title={`Pet Happiness: ${profile?.activePet?.happiness ?? 50}%`}
             >
               <div className="text-xl leading-none">
-                {profile?.activePet.icon}
+                {profile?.activePet?.customImage ? (
+                  <img src={profile.activePet.customImage} alt="Pet" className="w-6 h-6 object-cover rounded-md" />
+                ) : (
+                  profile?.activePet.icon
+                )}
               </div>
               <div className="w-16 h-2 bg-white dark:bg-neutral-800 rounded-full overflow-hidden shadow-inner">
                 <div

@@ -275,11 +275,62 @@ export const generateTopicImage = async (
   }
 };
 
+export interface LessonPlanData {
+  learningObjectives: string[];
+  keyActivities: string[];
+  assessmentMethods: string[];
+}
+
 export interface DynamicQuizData {
   question: string;
   options: [string, string, string, string];
   correctIndex: number;
 }
+
+export const generateLessonPlan = async (
+  topicName: string,
+  difficultyLevel: number,
+  priority: string,
+): Promise<LessonPlanData> => {
+  const prompt = `You are an expert curriculum designer. Please generate a concise lesson plan for the topic: "${topicName}". 
+  The student's difficulty level is ${difficultyLevel}/10. Priority is ${priority}.
+  
+  Return ONLY a valid JSON object with this exact structure, with no markdown formatting or extra text: 
+  { 
+    "learningObjectives": ["string", "string"], 
+    "keyActivities": ["string", "string"], 
+    "assessmentMethods": ["string", "string"] 
+  }`;
+
+  try {
+    const response = await getAIClient().models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ text: prompt }],
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const { text } = response as any;
+    if (!text) throw new Error("No text returned from Gemini");
+
+    const parsed = extractJson(text);
+
+    if (
+      Array.isArray(parsed.learningObjectives) &&
+      Array.isArray(parsed.keyActivities) &&
+      Array.isArray(parsed.assessmentMethods)
+    ) {
+      return parsed as LessonPlanData;
+    } else {
+      throw new Error("Malformed JSON structure for lesson plan");
+    }
+  } catch (error) {
+    console.error("Error generating lesson plan:", error);
+    throw error;
+  }
+};
+
 
 export const generateDynamicQuiz = async (
   topic: string,

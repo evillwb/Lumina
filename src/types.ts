@@ -37,6 +37,12 @@ export interface UserProfile {
   updatedAt?: string;
 }
 
+export interface LessonPlanData {
+  learningObjectives: string[];
+  keyActivities: string[];
+  assessmentMethods: string[];
+}
+
 export interface Topic {
   id: string; // Document ID
   userId: string;
@@ -50,6 +56,7 @@ export interface Topic {
   masteryLevel: number;
   failedAttempts?: number;
   lastReviewed?: string; // ISO string
+  lessonPlan?: LessonPlanData;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -28,7 +28,7 @@ import {
   Line,
   CartesianGrid,
 } from "recharts";
-import { Flame, Brain, TrendingUp, BookOpen, Lightbulb } from "lucide-react";
+import { Flame, Brain, TrendingUp, BookOpen, Lightbulb, Calendar } from "lucide-react";
 import { useTranslation } from "../locales/i18n";
 
 export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
@@ -39,6 +39,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [quizLogs, setQuizLogs] = useState<QuizLog[]>([]);
+  const [scheduledBlocksCount, setScheduledBlocksCount] = useState<number>(0);
   const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +74,6 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       points.push({ date: dateStr, mastery: curMastery });
     });
 
-    // Only keep last 20 points for neat visualization
     return points.slice(-20);
   }, [quizLogs, selectedTopicId]);
 
@@ -89,12 +89,10 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
         if (userSnap.exists()) {
           const pData = userSnap.data() as UserProfile;
 
-          // Streak and Pet Decay logic
           const tz =
             pData.timezone ||
             Intl.DateTimeFormat().resolvedOptions().timeZone ||
             "UTC";
-          // Format as YYYY-MM-DD
           const formatter = new Intl.DateTimeFormat("en-CA", {
             timeZone: tz,
             year: "numeric",
@@ -114,13 +112,8 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
 
             if (pData.lastStreakDate !== yesterdayStr && newStreak > 0) {
               newStreak = 0;
-              // Pet health decay
               if (pData.activePet) {
                 newHappiness = Math.max(0, newHappiness - 20);
-                // eslint-disable-next-line
-                alert(
-                  "Oh no! You lost your streak. Your pet lost 20% happiness.",
-                );
               }
               needsUpdate = true;
             }
@@ -158,6 +151,10 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
         setQuizLogs(
           logsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as QuizLog),
         );
+        
+        const blocksRef = collection(db, "users", user.uid, "scheduleBlocks");
+        const blocksSnap = await getDocs(blocksRef);
+        setScheduledBlocksCount(blocksSnap.size);
       } catch (err) {
         console.error("Dashboard error:", err);
       } finally {
@@ -168,18 +165,8 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
   }, [user]);
 
   const subjectMasteryData = useMemo(() => {
-    if (topics.length === 0) {
-      return [
-        { subject: "Reading", A: 65, fullSubject: "Reading Comprehension", fullMark: 100 },
-        { subject: "Speaking", A: 80, fullSubject: "Speaking fluently", fullMark: 100 },
-        { subject: "Writing", A: 45, fullSubject: "Writing essays", fullMark: 100 },
-        { subject: "Listening", A: 70, fullSubject: "Listening active", fullMark: 100 },
-      ];
-    }
-
-    // group by subject
-    const subjectMap: Record<string, { totalMastery: number; count: number }> =
-      {};
+    if (topics.length === 0) return [];
+    const subjectMap: Record<string, { totalMastery: number; count: number }> = {};
     topics.forEach((t) => {
       const subj = t.subject || "General";
       if (!subjectMap[subj]) {
@@ -189,25 +176,23 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       subjectMap[subj].count += 1;
     });
 
-    const result = Object.entries(subjectMap).map(([subject, data]) => ({
+    let result = Object.entries(subjectMap).map(([subject, data]) => ({
       subject: subject.substring(0, 10) + (subject.length > 10 ? "..." : ""),
       A: Math.round(data.totalMastery / data.count),
       fullSubject: subject,
       fullMark: 100,
     }));
 
-    if (result.length === 1) {
-      result.push({ subject: "Secondary", A: 0, fullSubject: "Secondary", fullMark: 100 });
-      result.push({ subject: "Tertiary", A: 0, fullSubject: "Tertiary", fullMark: 100 });
-    } else if (result.length === 2) {
-      result.push({ subject: "Tertiary", A: 0, fullSubject: "Tertiary", fullMark: 100 });
-    }
-
     return result;
   }, [topics]);
 
   if (loading)
-    return <div className="p-8 text-neutral-400">Loading metrics...</div>;
+    return (
+      <div className="p-8 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="text-neutral-500 font-medium tracking-tight animate-pulse">Loading real-world metrics...</div>
+      </div>
+    );
 
   if (!user) {
     return (
@@ -236,7 +221,14 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
   const totalMastery =
     topics.length > 0
       ? topics.reduce((acc, t) => acc + t.masteryLevel, 0) / topics.length
-      : 65;
+      : 0;
+
+  const numSubjects = Object.keys(
+    topics.reduce((acc, t) => {
+      acc[t.subject || "General"] = true;
+      return acc;
+    }, {} as Record<string, boolean>)
+  ).length;
 
   let data: any[] = [];
   if (topics.length > 0) {
@@ -248,16 +240,6 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       { name: "Fri", retention: Math.max(0, totalMastery - 5) },
       { name: "Sat", retention: Math.max(0, totalMastery - 2) },
       { name: "Sun", retention: totalMastery || 0 },
-    ];
-  } else {
-    data = [
-      { name: "Mon", retention: 35 },
-      { name: "Tue", retention: 45 },
-      { name: "Wed", retention: 50 },
-      { name: "Thu", retention: 55 },
-      { name: "Fri", retention: 60 },
-      { name: "Sat", retention: 63 },
-      { name: "Sun", retention: 65 },
     ];
   }
 
@@ -280,50 +262,49 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
         </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Streak Card */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex items-center gap-4">
-          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-500/20 rounded-full flex items-center justify-center">
-            <Flame className="w-6 h-6 text-orange-600 dark:text-orange-500" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-100 dark:bg-orange-500/20 rounded-full flex items-center justify-center">
+              <Flame className="w-5 h-5 text-orange-600 dark:text-orange-500" />
+            </div>
+            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">{t("daily_streak")}</p>
           </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">
-              {t("daily_streak")}
-            </p>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-              {profile?.streak || 0} Days
-            </p>
-          </div>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-white">{profile?.streak || 0} Days</p>
         </div>
 
-        {/* Mastery Card */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center">
-            <Brain className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+        {/* Subjects Card */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-500/20 rounded-full flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-500" />
+            </div>
+            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Active Subjects</p>
           </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">
-              Global Mastery
-            </p>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-              {Math.round(totalMastery)}%
-            </p>
-          </div>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-white">{numSubjects}</p>
         </div>
 
         {/* Topics Card */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center">
-            <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-500" />
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col gap-2">
+           <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-500" />
+            </div>
+            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Tracked Topics</p>
           </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">
-              Tracked Topics
-            </p>
-            <p className="text-2xl font-bold text-neutral-900 dark:text-white">
-              {topics.length}
-            </p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-white">{topics.length}</p>
+        </div>
+
+        {/* Scheduled Blocks Card */}
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl p-6 flex flex-col gap-2">
+           <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+            </div>
+            <p className="text-xs text-neutral-500 uppercase font-bold tracking-widest">Scheduled Blocks</p>
           </div>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-white">{scheduledBlocksCount}</p>
         </div>
       </div>
 
@@ -414,13 +395,13 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
             </p>
           </div>
           <div className="flex-1 min-h-[250px] w-full mt-4">
-            {subjectMasteryData.length === 0 ? (
+            {subjectMasteryData.length < 3 ? (
               <div className="h-full flex flex-col items-center justify-center border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
                 <p className="text-neutral-500 dark:text-neutral-400 mb-2">
-                  No active subjects.
+                  Not enough subjects.
                 </p>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                  Track subjects to see breakdown.
+                  Track 3+ subjects to see graph.
                 </p>
               </div>
             ) : (
@@ -563,3 +544,4 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
     </div>
   );
 };
+
