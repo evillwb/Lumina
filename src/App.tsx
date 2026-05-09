@@ -18,24 +18,32 @@ import { PomodoroTimer } from './components/PomodoroTimer';
 import { SmartNotes } from './components/SmartNotes';
 import { SubjectNotes } from './components/SubjectNotes';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { PreferencesProvider } from './contexts/PreferencesContext';
+import { PreferencesProvider, usePreferences } from './contexts/PreferencesContext';
 
-const ThemeLoader = () => {
+const UserDataLoader = () => {
   const { user } = useAuth();
+  const { setLanguage } = usePreferences();
+  
   useEffect(() => {
     if (!user) return;
-    const fetchTheme = async () => {
+    const fetchUserData = async () => {
       try {
         const d = await getDoc(doc(db, 'users', user.uid));
-        if (d.exists() && d.data().activePremiumTheme) {
-          document.documentElement.setAttribute('data-premium-theme', d.data().activePremiumTheme);
+        if (d.exists()) {
+          const data = d.data();
+          if (data.activePremiumTheme) {
+            document.documentElement.setAttribute('data-premium-theme', data.activePremiumTheme);
+          }
+          if (data.language) {
+            setLanguage(data.language as any);
+          }
         }
       } catch (e) {
         console.error(e);
       }
     };
-    fetchTheme();
-  }, [user]);
+    fetchUserData();
+  }, [user, setLanguage]);
   return null;
 }
 
@@ -46,8 +54,8 @@ export default function App() {
     <ThemeProvider>
       <PreferencesProvider>
         <AuthProvider>
-          <ThemeLoader />
-          <div className="flex h-screen font-sans overflow-hidden transition-colors duration-300">
+          <UserDataLoader />
+          <div className="flex w-full h-screen font-sans overflow-x-hidden transition-colors duration-300">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
             {activeTab === 'Dashboard' && <Dashboard onNavigateToCalendar={() => setActiveTab('Calendar')} />}

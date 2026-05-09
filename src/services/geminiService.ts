@@ -23,10 +23,16 @@ export const generateQuizQuestions = async (
     You are an expert tutor in ${subject}. 
     I am a student preparing for an exam.
     Please generate ${numQuestions} multiple-choice question(s) to test my understanding of the topic: "${topic}".
-    ${notes ? `Here are my notes on this topic, try to align the questions with these concepts: "${notes}"` : ''}
+    
+    ${notes && notes.trim().length > 0 ? `Here are my notes on this topic. You MUST base your questions heavily on these notes to ensure relevance:\n"""\n${notes}\n"""` : ''}
+    
+    ${files && files.length > 0 ? "I have also attached some reference materials (documents or images). Please analyze them and extract key information to generate highly relevant questions." : ''}
 
-    CRITICAL: The entire questions, options, and explanations MUST be in the following language: ${language}.
-    If there are any attached files/images, use them as extra context for generating the questions.
+    CRITICAL INSTRUCTIONS:
+    1. The entire questions, options, and explanations MUST be in the following language: ${language}.
+    2. Make the questions challenging but fair.
+    3. Ensure the correct answer is unambiguously correct and the distractors (wrong options) are plausible.
+    4. Provide clear explanations for WHY the correct answer is right and the others are wrong.
 
     Return the response ONLY as a JSON string representing an array of objects. Do not include markdown code block formatting or backticks.
     Format:

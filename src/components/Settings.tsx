@@ -268,7 +268,20 @@ export const Settings: React.FC = () => {
           </div>
           <select 
             value={language}
-            onChange={(e) => setLanguage(e.target.value as any)}
+            onChange={async (e) => {
+              const newLanguage = e.target.value as any;
+              setLanguage(newLanguage);
+              if (user) {
+                try {
+                  await updateDoc(doc(db, 'users', user.uid), {
+                    language: newLanguage,
+                    updatedAt: serverTimestamp()
+                  });
+                } catch (err) {
+                  console.error("Failed to update language:", err);
+                }
+              }
+            }}
             className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
           >
             <option value="English">English</option>

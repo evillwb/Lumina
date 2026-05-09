@@ -47,10 +47,12 @@ export const SmartNotes: React.FC = () => {
     try {
       const processedFiles: { mimeType: string, data: string }[] = [];
       for (const file of files) {
-          const buffer = await file.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-          );
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
           processedFiles.push({ mimeType: file.type, data: base64 });
       }
       setProcessedFilesState(processedFiles);

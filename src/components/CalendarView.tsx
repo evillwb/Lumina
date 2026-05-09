@@ -56,7 +56,7 @@ const BreakOverlay = ({
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 50, scale: 0.9 }}
-      className="fixed bottom-6 right-6 z-[150] bg-white dark:bg-neutral-900 border-2 border-indigo-500 dark:border-indigo-500 p-6 rounded-2xl shadow-2xl w-80"
+      className="fixed bottom-6 right-6 z-[150] bg-white dark:bg-neutral-900 border-2 border-indigo-500 dark:border-indigo-500 p-6 rounded-2xl shadow-2xl w-[calc(100vw-3rem)] sm:w-80 max-w-sm"
     >
       <div className="flex items-center gap-3 mb-2">
          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
@@ -477,16 +477,17 @@ export const CalendarView: React.FC = () => {
 
       // 4. Adaptive Rescheduling if Failed
       if (!isCorrect) {
-        let delayDays = 1;
-        let searchWindow = 3;
+        // Reschedule within the next 2-3 days based on available slots
+        let delayDays = 2;
+        let searchWindow = 2; // checks day + 2 and day + 3
         
         if (newMastery > 50 && newFailedAttempts === 1) {
-             // Just a slip up, try again in 2 days
-             delayDays = 2;
-             searchWindow = 2;
+             // Minor slip, try again towards the end of the window (3 days)
+             delayDays = 3;
+             searchWindow = 1;
         } else if (newFailedAttempts > 2 || newMastery < 30) {
-             // Struggling, needs immediate review
-             delayDays = 1;
+             // Struggling, review as soon as the window starts (2 days)
+             delayDays = 2;
              searchWindow = 1;
         }
 
@@ -542,7 +543,7 @@ export const CalendarView: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-neutral-50 dark:bg-[#0c0c0e]">
+    <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 bg-neutral-50 dark:bg-[#0c0c0e]">
       <header className="mb-8 flex flex-col items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-medium text-neutral-900 dark:text-white tracking-tight">Timeline</h1>
@@ -945,17 +946,17 @@ export const CalendarView: React.FC = () => {
                   <p className="text-neutral-700 dark:text-neutral-300 text-sm mb-8 leading-relaxed font-medium">
                     {quizData.question}
                   </p>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
                     {quizData.options.map((opt, i) => {
-                       let btnClass = "text-left w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
+                       let btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
                        if (selectedFeedback && selectedFeedback.option === opt) {
                           btnClass = selectedFeedback.isCorrect 
-                            ? "text-left w-full p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold"
-                            : "text-left w-full p-4 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 transition-all text-sm font-semibold";
+                            ? "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold"
+                            : "text-left w-full md:flex-1 p-4 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 transition-all text-sm font-semibold";
                        } else if (selectedFeedback && opt === quizData.correctAnswer) {
-                          btnClass = "text-left w-full p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold opacity-50";
+                          btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold opacity-50";
                        } else if (selectedFeedback) {
-                          btnClass = "text-left w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-all text-sm opacity-50 cursor-not-allowed";
+                          btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-all text-sm opacity-50 cursor-not-allowed";
                        }
                        return (
                         <button 

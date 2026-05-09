@@ -28,7 +28,7 @@ export const Quizzes: React.FC = () => {
   const [logs, setLogs] = useState<QuizLog[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'Take Quiz' | 'History' | 'Review Mistakes'>('Take Quiz');
+  const [activeTab, setActiveTab] = useState<'Take Quiz' | 'Flashcards' | 'History' | 'Review Mistakes'>('Take Quiz');
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const formatter = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
@@ -56,6 +56,7 @@ export const Quizzes: React.FC = () => {
   const [examModeActive, setExamModeActive] = useState(false);
   const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
   const [generatingExplanations, setGeneratingExplanations] = useState<Record<string, boolean>>({});
+  const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   const generateExplanationOnFly = async (logId: string, question: string, userAnswer: string) => {
     if (!user) return;
@@ -150,8 +151,12 @@ export const Quizzes: React.FC = () => {
     try {
       const processedFiles: { mimeType: string, data: string }[] = [];
       for (const file of quizFiles) {
-         const buffer = await file.arrayBuffer();
-         const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+         const base64 = await new Promise<string>((resolve, reject) => {
+           const reader = new FileReader();
+           reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+           reader.onerror = reject;
+           reader.readAsDataURL(file);
+         });
          processedFiles.push({ mimeType: file.type, data: base64 });
       }
 
@@ -216,8 +221,12 @@ export const Quizzes: React.FC = () => {
     try {
       const processedFiles: { mimeType: string, data: string }[] = [];
       for (const file of quizFiles) {
-         const buffer = await file.arrayBuffer();
-         const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+         const base64 = await new Promise<string>((resolve, reject) => {
+           const reader = new FileReader();
+           reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+           reader.onerror = reject;
+           reader.readAsDataURL(file);
+         });
          processedFiles.push({ mimeType: file.type, data: base64 });
       }
 
@@ -376,14 +385,14 @@ export const Quizzes: React.FC = () => {
         <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">{t('dashboard')}</p>
       </header>
 
-      <div className="flex space-x-2 mb-6 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl w-max">
-        {['Take Quiz', 'History', 'Review Mistakes'].map(tab => (
+      <div className="flex flex-col md:flex-row mb-6 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl w-full sm:w-auto overflow-hidden gap-2 md:gap-4 lg:w-max">
+        {['Take Quiz', 'Flashcards', 'History', 'Review Mistakes'].map(tab => (
            <button 
              key={tab}
              onClick={() => setActiveTab(tab as any)}
-             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white shadow-sm' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
            >
-             {tab === 'Take Quiz' ? t('take_quiz') : tab === 'History' ? t('history') : 'Review Mistakes'}
+             {tab === 'Take Quiz' ? t('take_quiz') : tab === 'History' ? t('history') : tab === 'Flashcards' ? 'Flashcards' : 'Review Mistakes'}
            </button>
         ))}
       </div>
@@ -533,17 +542,17 @@ export const Quizzes: React.FC = () => {
                        {quizData[currentQuestionIdx].question}
                     </p>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
                       {quizData[currentQuestionIdx].options.map((opt, i) => {
-                         let btnClass = "text-left w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
+                         let btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
                          if (selectedFeedback && selectedFeedback.option === opt) {
                             btnClass = selectedFeedback.isCorrect 
-                              ? "text-left w-full p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold"
-                              : "text-left w-full p-4 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 transition-all text-sm font-semibold";
+                              ? "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold"
+                              : "text-left w-full md:flex-1 p-4 rounded-xl border border-rose-500 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 transition-all text-sm font-semibold";
                          } else if (selectedFeedback && opt === quizData[currentQuestionIdx].correctAnswer) {
-                            btnClass = "text-left w-full p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold opacity-50";
+                            btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 transition-all text-sm font-semibold opacity-50";
                          } else if (selectedFeedback) {
-                            btnClass = "text-left w-full p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-all text-sm opacity-50 cursor-not-allowed";
+                            btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500 transition-all text-sm opacity-50 cursor-not-allowed";
                          }
                          return (
                           <button 
@@ -618,6 +627,73 @@ export const Quizzes: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'Flashcards' && (
+        <div className="space-y-6 max-w-4xl">
+           <div className="flex justify-between items-center bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm">
+             <div>
+               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">Study Flashcards</h2>
+               <p className="text-sm text-neutral-500 dark:text-neutral-400">Review your syllabus topics front-to-back.</p>
+             </div>
+             <div>
+               <button onClick={() => setFlippedCards({})} className="text-sm text-blue-600 dark:text-blue-500 hover:underline">Reset All Cards</button>
+             </div>
+           </div>
+
+           {topics.length === 0 ? (
+             <div className="py-12 text-center text-neutral-500 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
+               You have no topics in your syllabus. Add some topics to generate flashcards.
+             </div>
+           ) : (
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {topics.map(topic => (
+                 <div 
+                   key={topic.id}
+                   onClick={() => setFlippedCards(prev => ({...prev, [topic.id]: !prev[topic.id]}))}
+                   className="relative w-full h-[250px] [perspective:1000px] cursor-pointer group"
+                 >
+                   <div 
+                     className={`w-full h-full transition-all duration-500 [transform-style:preserve-3d] ${flippedCards[topic.id] ? '[transform:rotateY(180deg)]' : ''}`}
+                   >
+                     {/* Front Side (Title & Subject) */}
+                     <div className="absolute w-full h-full backface-hidden [backface-visibility:hidden] bg-white dark:bg-neutral-900 border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-blue-500 dark:hover:border-blue-500 rounded-2xl shadow-sm flex flex-col items-center justify-center p-6 text-center">
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-500 uppercase tracking-widest mb-3 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full">{topic.subject || 'Topic'}</span>
+                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white">{topic.title}</h3>
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                           <span className="text-xs text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full">Click to flip</span>
+                        </div>
+                     </div>
+
+                     {/* Back Side (Summary/Notes) */}
+                     <div className="absolute w-full h-full backface-hidden [backface-visibility:hidden] [transform:rotateY(180deg)] bg-blue-500 text-white rounded-2xl shadow-lg p-6 overflow-y-auto">
+                        <div className="h-full flex flex-col">
+                           <h4 className="text-sm font-semibold opacity-90 mb-3 pb-3 border-b border-white/20">{topic.title}</h4>
+                           <div className="flex-1 overflow-y-auto text-sm leading-relaxed prose prose-invert prose-sm" dir="auto">
+                             {topic.notes ? (
+                               <div className="whitespace-pre-wrap font-medium">
+                                  {topic.notes.split('\n').map((line, i) => (
+                                      <React.Fragment key={i}>
+                                         {line}
+                                         <br />
+                                      </React.Fragment>
+                                  ))}
+                               </div>
+                             ) : (
+                               <p className="opacity-70 italic text-center mt-10">No notes provided for this topic.</p>
+                             )}
+                           </div>
+                           <div className="mt-4 pt-3 border-t border-white/20 text-center text-xs opacity-70">
+                             Click to flip back
+                           </div>
+                        </div>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
         </div>
       )}
 
