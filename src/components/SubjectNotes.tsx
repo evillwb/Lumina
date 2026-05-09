@@ -5,6 +5,8 @@ import { collection, query, where, getDocs, doc, setDoc, updateDoc, serverTimest
 import { Plus, Clock, FileText, Check, Download } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '../locales/i18n';
+import { motion, AnimatePresence } from 'motion/react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface Subject {
   id: string;
@@ -172,14 +174,22 @@ export const SubjectNotes: React.FC = () => {
                   <Download className="w-3.5 h-3.5" /> 
                   Export to PDF
                 </button>
-                <div className="flex items-center text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800/50 px-3 py-1.5 rounded-full">
-                  {isSaving ? (
-                    <span className="flex items-center gap-1.5"><span className="shrink-0 w-1.5 h-1.5 bg-neutral-400 rounded-full animate-pulse"></span> Saving...</span>
-                  ) : lastSaved ? (
-                    <span className="flex items-center gap-1.5"><Check className="shrink-0 w-3.5 h-3.5" /> Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  ) : (
-                    <span>Ready</span>
-                  )}
+                <div className="flex items-center text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800/50 px-3 py-1.5 rounded-full overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {isSaving ? (
+                      <motion.span key="saving" initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }} transition={{ duration: 0.2 }} className="flex items-center gap-1.5">
+                        <span className="shrink-0 w-1.5 h-1.5 bg-neutral-400 rounded-full animate-pulse"></span> Saving...
+                      </motion.span>
+                    ) : lastSaved ? (
+                      <motion.span key="saved" initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }} className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <Check className="shrink-0 w-3.5 h-3.5" /> Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </motion.span>
+                    ) : (
+                      <motion.span key="ready" initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }} transition={{ duration: 0.2 }}>
+                        Ready
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
@@ -191,8 +201,8 @@ export const SubjectNotes: React.FC = () => {
                 placeholder="Start typing your notes here..."
                 className="w-full h-full min-h-[50vh] bg-transparent resize-none border-none outline-none focus:ring-0 text-neutral-800 dark:text-neutral-200 text-lg leading-relaxed placeholder:text-neutral-400 dark:placeholder:text-neutral-600 print:hidden"
               />
-              <div className="hidden print:block whitespace-pre-wrap text-black text-lg leading-relaxed font-serif">
-                {noteContent}
+              <div className="hidden print:block text-black text-lg leading-relaxed font-serif">
+                <MarkdownRenderer content={noteContent} />
               </div>
             </div>
           </>

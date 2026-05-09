@@ -8,8 +8,8 @@ import { ScheduleBlock, STUDY_HOURS, Topic } from '../types';
 import { CheckCircle2, XCircle, CalendarIcon, Lightbulb, ChevronLeft, ChevronRight, Plus, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateQuizQuestions, generateDynamicQuiz } from '../services/geminiService';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { v4 as uuidv4 } from 'uuid';
-import confetti from 'canvas-confetti';
 
 const formatDateLocal = (d: Date) => {
     const year = d.getFullYear();
@@ -472,11 +472,13 @@ export const CalendarView: React.FC = () => {
       const bIdx = newBlocks.findIndex(b => b.id === currentQuiz.id);
       if (bIdx > -1) newBlocks[bIdx].status = isCorrect ? 'mastered' : 'failed';
 
-      if (isCorrect) {
-          confetti({
-             particleCount: 150,
-             spread: 70,
-             origin: { y: 0.6 }
+      const localNowStr = getLocalTodayDateString();
+      const todayBlocks = newBlocks.filter(b => b.day === localNowStr);
+      const allTodayDone = todayBlocks.length > 0 && todayBlocks.every(b => b.status === 'mastered');
+
+      if (isCorrect || allTodayDone) {
+          import('../utils/confetti').then((module) => {
+              module.triggerConfetti();
           });
       }
 
@@ -956,9 +958,10 @@ export const CalendarView: React.FC = () => {
               onClick={() => setCurrentQuiz(null)} 
             />
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
               className="relative w-full max-w-lg bg-white dark:bg-[#18181b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl p-6 md:p-8 z-20 max-h-[90vh] overflow-y-auto"
             >
               <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600" />
@@ -984,9 +987,9 @@ export const CalendarView: React.FC = () => {
                 </div>
               ) : quizData ? (
                 <>
-                  <p className="text-neutral-700 dark:text-neutral-300 text-sm mb-8 leading-relaxed font-medium">
-                    {quizData.question}
-                  </p>
+                  <div className="text-neutral-700 dark:text-neutral-300 text-sm mb-8 leading-relaxed font-medium">
+                    <MarkdownRenderer content={quizData.question} />
+                  </div>
                   <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
                     {quizData.options.map((opt, i) => {
                        let btnClass = "text-left w-full md:flex-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-blue-600 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all text-sm text-neutral-700 dark:text-neutral-300";
