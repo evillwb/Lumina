@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, query, getDocs, doc, getDoc, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Topic, UserProfile, QuizLog } from '../types';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line, CartesianGrid } from 'recharts';
-import { Flame, Brain, TrendingUp, BookOpen } from 'lucide-react';
+import { Flame, Brain, TrendingUp, BookOpen, Lightbulb } from 'lucide-react';
 import { useTranslation } from '../locales/i18n';
 
 export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNavigateToCalendar }) => {
@@ -120,14 +120,27 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
     fetchData();
   }, [user]);
 
-  const subjectMasteryData = [
-    { subject: t('reading') || 'Reading', A: 85, fullSubject: t('reading') || 'Reading', fullMark: 100 },
-    { subject: t('writing') || 'Writing', A: 65, fullSubject: t('writing') || 'Writing', fullMark: 100 },
-    { subject: t('speaking') || 'Speaking', A: 90, fullSubject: t('speaking') || 'Speaking', fullMark: 100 },
-    { subject: t('listening') || 'Listening', A: 75, fullSubject: t('listening') || 'Listening', fullMark: 100 },
-    { subject: t('grammar') || 'Grammar', A: 60, fullSubject: t('grammar') || 'Grammar', fullMark: 100 },
-    { subject: t('memory') || 'Memory', A: 80, fullSubject: t('memory') || 'Memory', fullMark: 100 },
-  ];
+  const subjectMasteryData = useMemo(() => {
+    if (topics.length === 0) return [];
+    
+    // group by subject
+    const subjectMap: Record<string, {totalMastery: number, count: number}> = {};
+    topics.forEach(t => {
+      const subj = t.subject || 'General';
+      if (!subjectMap[subj]) {
+        subjectMap[subj] = { totalMastery: 0, count: 0 };
+      }
+      subjectMap[subj].totalMastery += t.masteryLevel;
+      subjectMap[subj].count += 1;
+    });
+
+    return Object.entries(subjectMap).map(([subject, data]) => ({
+      subject: subject.substring(0, 10) + (subject.length > 10 ? '...' : ''),
+      A: Math.round(data.totalMastery / data.count),
+      fullSubject: subject,
+      fullMark: 100
+    }));
+  }, [topics]);
 
   if (loading) return <div className="p-8 text-neutral-400">Loading metrics...</div>;
 
@@ -137,7 +150,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
         <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Welcome to Lumina</h2>
         <p className="text-neutral-500 dark:text-neutral-400 mb-6">Please sign in with Google to start tracking your syllabus and mastery.</p>
         <div className="p-6 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-xl max-w-sm shadow-sm">
-          <BookOpen className="w-8 h-8 text-yellow-600 dark:text-yellow-500 mx-auto mb-3" />
+          <Lightbulb className="w-8 h-8 text-yellow-600 dark:text-yellow-500 mx-auto mb-3" />
           <h3 className="text-neutral-900 dark:text-white font-medium mb-1">Bring Clarity to Your Learning</h3>
           <p className="text-xs text-neutral-600 dark:text-neutral-400">Input your syllabus, generate a schedule, and take AI-generated quizzes to adaptively master your subjects.</p>
         </div>
@@ -288,7 +301,7 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({ onNa
             onChange={(e) => setSelectedTopicId(e.target.value)}
             className="bg-neutral-100 dark:bg-neutral-800 border-none rounded-lg p-2 text-sm text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
           >
-            <option value="all">All Topics (Simulated)</option>
+            <option value="all">All Topics</option>
             {topics.map(t => (
                <option key={t.id} value={t.id}>{t.title}</option>
             ))}

@@ -24,15 +24,18 @@ export const generateQuizQuestions = async (
     I am a student preparing for an exam.
     Please generate ${numQuestions} multiple-choice question(s) to test my understanding of the topic: "${topic}".
     
-    ${notes && notes.trim().length > 0 ? `Here are my notes on this topic. You MUST base your questions heavily on these notes to ensure relevance:\n"""\n${notes}\n"""` : ''}
+    ${notes && notes.trim().length > 0 ? `Here are my notes on this topic:\n"""\n${notes}\n"""` : ''}
+    ${files && files.length > 0 ? "I have also attached some reference materials (documents or images)." : ''}
     
-    ${files && files.length > 0 ? "I have also attached some reference materials (documents or images). Please analyze them and extract key information to generate highly relevant questions." : ''}
+    ${(notes && notes.trim().length > 0) || (files && files.length > 0) ? `CRITICAL CONTEXT INSTRUCTION:
+    You MUST derive the questions, correct answers, and explanations directly and accurately from the notes and attached reference materials provided. 
+    Do not generate generic questions about the topic; strictly test my knowledge on the specific details, definitions, and concepts present in the provided materials. If the materials are insufficient for ${numQuestions} questions, do your best to extrapolate highly related questions.` : ''}
 
-    CRITICAL INSTRUCTIONS:
+    GENERAL INSTRUCTIONS:
     1. The entire questions, options, and explanations MUST be in the following language: ${language}.
     2. Make the questions challenging but fair.
-    3. Ensure the correct answer is unambiguously correct and the distractors (wrong options) are plausible.
-    4. Provide clear explanations for WHY the correct answer is right and the others are wrong.
+    3. Ensure the correct answer is unambiguously correct based on the provided material, and the distractors (wrong options) are plausible.
+    4. Provide clear explanations for WHY the correct answer is right and the others are wrong, referencing the material where possible.
 
     Return the response ONLY as a JSON string representing an array of objects. Do not include markdown code block formatting or backticks.
     Format:
@@ -209,8 +212,20 @@ export interface DynamicQuizData {
   correctIndex: number;
 }
 
-export const generateDynamicQuiz = async (topic: string, language: string = 'English'): Promise<DynamicQuizData> => {
-  const prompt = `You are an expert tutor. Generate one unique, challenging multiple-choice question about the topic: ${topic}. Return ONLY a valid JSON object with this exact structure, with no markdown formatting or extra text: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number (0-3)}. The question and options must be translated to: ${language}.`;
+export const generateDynamicQuiz = async (
+  topic: string, 
+  language: string = 'English',
+  notes?: string,
+  files?: { mimeType: string, data: string }[]
+): Promise<DynamicQuizData> => {
+  const prompt = `You are an expert tutor. Generate one unique, challenging multiple-choice question about the topic: ${topic}. 
+  
+  ${notes && notes.trim().length > 0 ? `Here are the student's personal notes on this topic:\n"""\n${notes}\n"""` : ''}
+  ${files && files.length > 0 ? "Reference materials are also attached." : ''}
+  
+  ${(notes && notes.trim().length > 0) || (files && files.length > 0) ? `CRITICAL: You MUST draw the question and correct answer directly from the notes and reference materials provided. Test specific facts or concepts mentioned there.` : ''}
+  
+  Return ONLY a valid JSON object with this exact structure, with no markdown formatting or extra text: {"question": "string", "options": ["string", "string", "string", "string"], "correctIndex": number (0-3)}. The question and options must be translated to: ${language}.`;
 
   const fallback: DynamicQuizData = {
     question: "What is the primary indicator of knowledge mastery?",
@@ -219,9 +234,22 @@ export const generateDynamicQuiz = async (topic: string, language: string = 'Eng
   };
 
   try {
+    const contents: any[] = [{ text: prompt }];
+
+    if (files && files.length > 0) {
+       for (const f of files) {
+          contents.push({
+             inlineData: {
+                data: f.data,
+                mimeType: f.mimeType
+             }
+          });
+       }
+    }
+
     const fetchPromise = ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: [{ text: prompt }],
+      contents: contents,
       config: {
         responseMimeType: 'application/json',
       }

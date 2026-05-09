@@ -250,23 +250,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           onClick={() => { setActiveTab('Dashboard'); setIsOpen(false); }}
           className="flex items-center gap-3 mb-10 px-2 mt-4 md:mt-0 hover:opacity-80 transition-opacity text-left"
         >
-          <div className="p-2 bg-indigo-500 rounded-lg shadow-lg shadow-indigo-500/20">
-            <Cat className="w-5 h-5 text-white" />
+          <div className="p-2 bg-yellow-400 dark:bg-yellow-500 rounded-lg shadow-lg shadow-yellow-500/20">
+            <Lightbulb className="w-5 h-5 text-yellow-950" />
           </div>
           <span className="font-bold text-sm tracking-widest text-neutral-900 dark:text-white uppercase mt-1">Lumina</span>
         </button>
 
         <nav className="space-y-1 flex-1">
           {[
-            { name: t('dashboard') || 'Dashboard', id: 'Dashboard', icon: LayoutDashboard },
-            { name: t('syllabus') || 'My Syllabus', id: 'My Syllabus', icon: BookOpen },
+            { name: t('dashboard') !== 'dashboard' ? t('dashboard') : 'Dashboard', id: 'Dashboard', icon: LayoutDashboard },
+            { name: t('syllabus') !== 'syllabus' ? t('syllabus') : 'My Syllabus', id: 'My Syllabus', icon: BookOpen },
             { name: 'Subject Notebook', id: 'Subject Notes', icon: FileText },
-            { name: t('smart_notes') || 'Smart Notes', id: 'Smart Notes', icon: BookOpen },
-            { name: t('calendar') || 'Calendar', id: 'Calendar', icon: CalendarIcon },
-            { name: t('quizzes') || 'Quizzes', id: 'Quizzes', icon: Lightbulb },
-            { name: t('focus_time') || 'Focus Time', id: 'Focus Time', icon: Timer },
-            { name: t('store_title') || 'Store & Quests', id: 'Store & Quests', icon: Store },
-            { name: t('settings') || 'Settings', id: 'Settings', icon: Settings }
+            { name: 'Smart Notes', id: 'Smart Notes', icon: BookOpen },
+            { name: t('calendar') !== 'calendar' ? t('calendar') : 'Calendar', id: 'Calendar', icon: CalendarIcon },
+            { name: t('quizzes') !== 'quizzes' ? t('quizzes') : 'Quizzes', id: 'Quizzes', icon: Lightbulb },
+            { name: t('focus_time') !== 'focus_time' ? t('focus_time') : 'Focus Time', id: 'Focus Time', icon: Timer },
+            { name: t('store_title') !== 'store_title' ? t('store_title') : 'Store & Quests', id: 'Store & Quests', icon: Store },
+            { name: t('settings') !== 'settings' ? t('settings') : 'Settings', id: 'Settings', icon: Settings }
           ].map((item) => (
             <button
               key={item.id}

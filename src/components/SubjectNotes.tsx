@@ -152,26 +152,26 @@ export const SubjectNotes: React.FC = () => {
       <div className="flex-1 flex flex-col h-full bg-[#fcfcfc] dark:bg-[#0a0a0c] overflow-hidden relative">
         {activeSubject ? (
           <>
-            <div className="shrink-0 pt-6 px-4 md:px-12 xl:px-24 max-w-4xl w-full mx-auto flex items-center justify-between">
+            <div className="shrink-0 pt-10 px-8 md:px-16 max-w-4xl w-full mx-auto flex items-center justify-between">
               <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 tracking-tight">{activeSubject.name}</h1>
               
               <div className="flex shrink-0 items-center text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800/50 px-3 py-1.5 rounded-full">
                 {isSaving ? (
                   <span className="flex items-center gap-1.5"><span className="shrink-0 w-1.5 h-1.5 bg-neutral-400 rounded-full animate-pulse"></span> Saving...</span>
                 ) : lastSaved ? (
-                  <span className="flex items-center gap-1.5"><Check className="shrink-0 w-3.5 h-3.5" /> Saved at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="flex items-center gap-1.5"><Check className="shrink-0 w-3.5 h-3.5" /> Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 ) : (
                   <span>Ready</span>
                 )}
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto px-4 md:px-12 xl:px-24 py-8 max-w-4xl w-full mx-auto">
+            <div className="flex-1 overflow-y-auto px-8 md:px-16 py-8 max-w-4xl w-full mx-auto">
               <textarea
                 value={noteContent}
                 onChange={e => setNoteContent(e.target.value)}
                 placeholder="Start typing your notes here..."
-                className="w-full h-full min-h-[50vh] bg-transparent resize-none border-none outline-none focus:ring-0 text-neutral-700 dark:text-neutral-300 text-base md:text-lg leading-relaxed placeholder:text-neutral-300 dark:placeholder:text-neutral-700 prose prose-slate dark:prose-invert"
+                className="w-full h-full min-h-[50vh] bg-transparent resize-none border-none outline-none focus:ring-0 text-neutral-800 dark:text-neutral-200 text-lg leading-relaxed placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
               />
             </div>
           </>

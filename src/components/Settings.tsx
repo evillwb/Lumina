@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ScheduleBlock, UserProfile } from '../types';
 import { getCalendarAccessToken } from '../lib/firebase';
-import { Download, CalendarDays, Moon, Sun, Languages, Cloud, Globe, BrainCircuit } from 'lucide-react';
+import { Download, CalendarDays, Moon, Sun, Languages, Cloud, Globe, Lightbulb } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useTranslation } from '../locales/i18n';
@@ -328,7 +328,7 @@ export const Settings: React.FC = () => {
         <div>
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-purple-50 dark:bg-purple-500/10 rounded-xl">
-              <BrainCircuit className="w-6 h-6 text-purple-600 dark:text-purple-500" />
+              <Lightbulb className="w-6 h-6 text-purple-600 dark:text-purple-500" />
             </div>
             <div>
               <h3 className="text-neutral-900 dark:text-white font-medium">Spaced Repetition</h3>

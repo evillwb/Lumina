@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
-import { CheckCircle2, XCircle, Clock, BrainCircuit, Play, UploadCloud } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Lightbulb, Play, UploadCloud } from 'lucide-react';
 import { generateQuizQuestions } from '../services/geminiService';
 import { useTranslation } from '../locales/i18n';
 import { Topic } from '../types';
@@ -402,7 +402,7 @@ export const Quizzes: React.FC = () => {
           {!quizData && !quizLoading && (
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 shadow-sm">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
-                  <BrainCircuit className="w-6 h-6 text-blue-600 dark:text-blue-500" />
+                  <Lightbulb className="w-6 h-6 text-blue-600 dark:text-blue-500" />
                 </div>
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">On-Demand Practice</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">Select a topic from your syllabus to immediately generate a custom AI quiz based on your personal notes.</p>
@@ -790,7 +790,7 @@ export const Quizzes: React.FC = () => {
                           disabled={generatingExplanations[log.id]}
                           className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"
                        >
-                          <BrainCircuit className="w-3 h-3" />
+                          <Lightbulb className="w-3 h-3" />
                           {generatingExplanations[log.id] ? 'Generating...' : 'Get Explanation'}
                        </button>
                     </div>
@@ -852,7 +852,7 @@ export const Quizzes: React.FC = () => {
                             disabled={generatingExplanations[log.id]}
                             className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 disabled:opacity-50"
                          >
-                            <BrainCircuit className="w-3 h-3" />
+                            <Lightbulb className="w-3 h-3" />
                             {generatingExplanations[log.id] ? 'Generating...' : 'Get Explanation'}
                          </button>
                       </div>

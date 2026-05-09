@@ -5,7 +5,7 @@ import { useTranslation } from '../locales/i18n';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, doc, getDocs, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { ScheduleBlock, STUDY_HOURS, Topic } from '../types';
-import { CheckCircle2, XCircle, CalendarIcon, BrainCircuit, ChevronLeft, ChevronRight, Plus, X, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, CalendarIcon, Lightbulb, ChevronLeft, ChevronRight, Plus, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { generateQuizQuestions, generateDynamicQuiz } from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
@@ -60,7 +60,7 @@ const BreakOverlay = ({
     >
       <div className="flex items-center gap-3 mb-2">
          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center">
-            <BrainCircuit className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <Lightbulb className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
          </div>
          <div>
             <h3 className="font-bold text-neutral-900 dark:text-white">Break Time</h3>
@@ -293,17 +293,24 @@ export const CalendarView: React.FC = () => {
     setCurrentQuiz(block);
     setQuizLoading(true);
     const topic = topics[block.topicId];
-    if (topic) {
-      const q = await generateDynamicQuiz(topic.title, language);
-      setQuizData({
-        question: q.question,
-        options: [...q.options],
-        correctAnswer: q.options[q.correctIndex]
-      });
-    } else {
-      setQuizData({ question: `What is this topic?`, options: ['A','B'], correctAnswer: 'A' });
+    try {
+      if (topic) {
+        const q = await generateDynamicQuiz(topic.title, language, topic.notes);
+        setQuizData({
+          question: q.question,
+          options: [...q.options],
+          correctAnswer: q.options[q.correctIndex]
+        });
+      } else {
+        setQuizData({ question: `What is this topic?`, options: ['A','B'], correctAnswer: 'A' });
+      }
+    } catch (err) {
+      console.error("Failed to fetch quiz:", err);
+      alert("Failed to load quiz from AI. Please try again.");
+      setCurrentQuiz(null);
+    } finally {
+      setQuizLoading(false);
     }
-    setQuizLoading(false);
   };
 
   const getLocalTodayDateString = () => {
@@ -315,7 +322,7 @@ export const CalendarView: React.FC = () => {
     }
   };
 
-  const getWeekDays = () => {
+  const currentWeekDays = React.useMemo(() => {
     const days = [];
     const localNowStr = getLocalTodayDateString();
     
@@ -354,9 +361,7 @@ export const CalendarView: React.FC = () => {
         }
     }
     return days;
-  };
-
-  const currentWeekDays = getWeekDays();
+  }, [viewMode, weekOffset, profile?.timezone]);
 
   const findNextAvailableSlot = (blocks: ScheduleBlock[], startDate: Date, delayDays: number = 1, searchWindow: number = 3): { day: string; start: string } | null => {
     const checkDate = new Date(startDate);
@@ -492,7 +497,11 @@ export const CalendarView: React.FC = () => {
         }
 
         const quizDate = new Date(currentQuiz.day);
-        const nextSlot = findNextAvailableSlot(newBlocks, quizDate, delayDays, searchWindow);
+        let nextSlot = findNextAvailableSlot(newBlocks, quizDate, delayDays, searchWindow);
+        if (!nextSlot) {
+            // Fallback: search up to 14 days ahead if the first window is full
+            nextSlot = findNextAvailableSlot(newBlocks, quizDate, delayDays, 14);
+        }
         
         if (nextSlot) {
           const newBlockId = uuidv4();
@@ -531,7 +540,15 @@ export const CalendarView: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-neutral-400">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex-1 p-4 md:p-8 space-y-8 bg-neutral-50 dark:bg-[#0c0c0e] animate-pulse">
+        <div className="h-8 w-48 bg-neutral-200 dark:bg-neutral-800 rounded-md"></div>
+        <div className="h-10 w-full md:w-3/4 bg-neutral-200 dark:bg-neutral-800 rounded-xl"></div>
+        <div className="h-[500px] w-full bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -679,15 +696,15 @@ export const CalendarView: React.FC = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         style={isMonthView ? {} : { position: 'absolute', top: topPx, height: heightPx, left: 4, right: 4 }}
-                        className={`p-1 sm:p-2 rounded-xl border transition-all group flex flex-col z-10 overflow-hidden cursor-pointer hover:shadow-lg ${isMonthView ? '' : ''} ${
-                          block.id === highlightedBlockId ? 'animate-pulse ring-4 ring-orange-500 shadow-2xl scale-105 z-50 ' : ''
+                        className={`p-2 sm:p-3 rounded-lg border transition-all group flex flex-col z-10 overflow-hidden cursor-pointer hover:shadow-md ${isMonthView ? '' : 'shadow-sm backdrop-blur-xl'} ${
+                          block.id === highlightedBlockId ? 'animate-pulse ring-2 ring-indigo-500 z-50 scale-105' : ''
                         } ${
                           block.status === 'mastered' 
-                            ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[inset_0_0_15px_rgba(16,185,129,0.05)]' 
+                            ? 'bg-emerald-50/90 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/50' 
                             : block.status === 'failed'
-                            ? 'bg-rose-500/10 border-rose-500/20 shadow-[inset_0_0_15px_rgba(244,63,94,0.05)]'
-                            : block.status === 'upcoming' && block.isReview ? 'bg-orange-500/10 border-orange-500/40 ring-1 ring-orange-500/20 shadow-lg shadow-orange-500/5 backdrop-blur-md'
-                            : 'bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/5 backdrop-blur-md'
+                            ? 'bg-rose-50/90 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/50'
+                            : block.status === 'upcoming' && block.isReview ? 'bg-orange-50/90 border-orange-200 dark:bg-orange-950/40 dark:border-orange-900/50'
+                            : 'bg-white/90 border-neutral-200 dark:bg-neutral-800/90 dark:border-neutral-700'
                         }`}
                       >
                         <div className={`flex justify-between items-start ${isMonthView ? 'mb-0' : 'mb-1'}`}>
@@ -811,7 +828,7 @@ export const CalendarView: React.FC = () => {
                       }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium shadow-md active:scale-95 transition-all"
                     >
-                      <BrainCircuit className="w-4 h-4" /> Start Review Session
+                      <Lightbulb className="w-4 h-4" /> Start Review Session
                     </button>
                  )}
               </div>
@@ -923,7 +940,7 @@ export const CalendarView: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600" />
               
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
-                <BrainCircuit className="w-6 h-6 text-blue-600 dark:text-blue-500" />
+                <Lightbulb className="w-6 h-6 text-blue-600 dark:text-blue-500" />
               </div>
               
               <div className="mb-2 text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em]">Knowledge Gate</div>
