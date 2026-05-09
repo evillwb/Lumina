@@ -189,12 +189,21 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       subjectMap[subj].count += 1;
     });
 
-    return Object.entries(subjectMap).map(([subject, data]) => ({
+    const result = Object.entries(subjectMap).map(([subject, data]) => ({
       subject: subject.substring(0, 10) + (subject.length > 10 ? "..." : ""),
       A: Math.round(data.totalMastery / data.count),
       fullSubject: subject,
       fullMark: 100,
     }));
+
+    if (result.length === 1) {
+      result.push({ subject: "Secondary", A: 0, fullSubject: "Secondary", fullMark: 100 });
+      result.push({ subject: "Tertiary", A: 0, fullSubject: "Tertiary", fullMark: 100 });
+    } else if (result.length === 2) {
+      result.push({ subject: "Tertiary", A: 0, fullSubject: "Tertiary", fullMark: 100 });
+    }
+
+    return result;
   }, [topics]);
 
   if (loading)

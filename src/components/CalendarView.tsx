@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   setDoc,
   getDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { ScheduleBlock, STUDY_HOURS, Topic } from "../types";
 import {
@@ -282,11 +283,24 @@ export const CalendarView: React.FC = () => {
     setLoading(true);
     try {
       // Add topics
+      // Clear existing topics and blocks first
+      const topicsRef = collection(db, "users", user.uid, "topics");
+      const existingTopics = await getDocs(topicsRef);
+      for (const d of existingTopics.docs) {
+        await deleteDoc(d.ref);
+      }
+      
+      const blocksRef = collection(db, "users", user.uid, "scheduleBlocks");
+      const existingBlocks = await getDocs(blocksRef);
+      for (const d of existingBlocks.docs) {
+        await deleteDoc(d.ref);
+      }
+
       const sampleTopics = [
         {
           id: uuidv4(),
           title: "Reading Comprehension",
-          subject: "English",
+          subject: "Reading",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -295,7 +309,7 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           title: "Speaking fluently",
-          subject: "English",
+          subject: "Speaking",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -304,7 +318,7 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           title: "Writing essays",
-          subject: "English",
+          subject: "Writing",
           priority: "normal",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
@@ -313,7 +327,7 @@ export const CalendarView: React.FC = () => {
         {
           id: uuidv4(),
           title: "Listening active",
-          subject: "English",
+          subject: "Listening",
           priority: "emergency",
           masteryLevel: 0,
           createdAt: serverTimestamp(),
