@@ -24,7 +24,6 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
-      outDir: path.resolve(__dirname, 'dist'),
       chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
