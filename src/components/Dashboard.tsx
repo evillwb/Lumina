@@ -186,6 +186,41 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
     return result;
   }, [topics]);
 
+  const retentionData = useMemo(() => {
+    if (quizLogs.length === 0) return [];
+    
+    const result = [];
+    const now = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+      const dayStart = new Date(d.setHours(0,0,0,0)).getTime();
+      const dayEnd = new Date(d.setHours(23,59,59,999)).getTime();
+      
+      const dayLogs = quizLogs.filter(l => {
+        if (!l.createdAt) return false;
+        const timestamp = typeof (l.createdAt as any).toDate === 'function' ? (l.createdAt as any).toDate().getTime() : new Date(l.createdAt).getTime();
+        return timestamp >= dayStart && timestamp <= dayEnd;
+      });
+      
+      let averageScore = 0;
+      if (dayLogs.length > 0) {
+         averageScore = (dayLogs.filter(l => l.isCorrect).length / dayLogs.length) * 100;
+      }
+      
+      result.push({
+        name: dayName,
+        retention: Math.round(averageScore)
+      });
+    }
+    
+    if (result.every(r => r.retention === 0)) return [];
+    
+    return result;
+  }, [quizLogs]);
+
   if (loading) {
     return (
       <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto w-full">
@@ -271,41 +306,6 @@ export const Dashboard: React.FC<{ onNavigateToCalendar: () => void }> = ({
       return acc;
     }, {} as Record<string, boolean>)
   ).length;
-
-  const retentionData = useMemo(() => {
-    if (quizLogs.length === 0) return [];
-    
-    const result = [];
-    const now = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
-      const dayStart = new Date(d.setHours(0,0,0,0)).getTime();
-      const dayEnd = new Date(d.setHours(23,59,59,999)).getTime();
-      
-      const dayLogs = quizLogs.filter(l => {
-        if (!l.createdAt) return false;
-        const timestamp = typeof (l.createdAt as any).toDate === 'function' ? (l.createdAt as any).toDate().getTime() : new Date(l.createdAt).getTime();
-        return timestamp >= dayStart && timestamp <= dayEnd;
-      });
-      
-      let averageScore = 0;
-      if (dayLogs.length > 0) {
-         averageScore = (dayLogs.filter(l => l.isCorrect).length / dayLogs.length) * 100;
-      }
-      
-      result.push({
-        name: dayName,
-        retention: Math.round(averageScore)
-      });
-    }
-    
-    if (result.every(r => r.retention === 0)) return [];
-    
-    return result;
-  }, [quizLogs]);
 
   return (
     <div className="space-y-8 flex-1 p-6 md:p-8 overflow-y-auto">
