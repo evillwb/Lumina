@@ -602,6 +602,29 @@ export const CalendarView: React.FC = () => {
         </div>
       </header>
 
+      {schedule.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-[#09090b] rounded-2xl border border-neutral-200 dark:border-neutral-800 animate-in fade-in duration-700">
+           <div className="w-20 h-20 bg-blue-50 dark:bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 shadow-sm rotate-3">
+             <CalendarIcon className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+           </div>
+           <h3 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">Your academic journey starts here</h3>
+           <p className="mt-2 text-neutral-500 max-w-sm leading-relaxed mb-6">You don't have any study sessions scheduled yet. Start by loading your syllabus or adding a manual session.</p>
+           <div className="flex gap-4">
+             <button
+               onClick={() => setShowAddModal(true)}
+               className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-md transition-all active:scale-95"
+             >
+               <Plus className="w-5 h-5" /> Add First Session
+             </button>
+             <button
+               onClick={loadSPMSyllabus}
+               className="flex items-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl font-medium shadow-sm transition-all active:scale-95"
+             >
+               Load Example Syllabus
+             </button>
+           </div>
+        </div>
+      ) : (
       <div className="bg-white dark:bg-[#09090b] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-x-auto relative">
         <div className="min-w-[700px] md:min-w-[900px] flex">
           {/* Time axis */}
@@ -754,6 +777,7 @@ export const CalendarView: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Add Session Modal */}
       <AnimatePresence>

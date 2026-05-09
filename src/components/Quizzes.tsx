@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, orderBy, limit, doc, setDoc, serverTimestamp, updateDoc, getDoc } from 'firebase/firestore';
 import { CheckCircle2, XCircle, Clock, Lightbulb, Play, UploadCloud } from 'lucide-react';
 import { generateQuizQuestions } from '../services/geminiService';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { useTranslation } from '../locales/i18n';
 import { Topic } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -340,8 +341,19 @@ export const Quizzes: React.FC = () => {
     } else {
        setQuizFinished(true);
        
+       const allCorrect = newResults.every(r => r.isCorrect);
+       if (allCorrect) {
+           import('canvas-confetti').then((module) => {
+               const confetti = module.default;
+               confetti({
+                   particleCount: 150,
+                   spread: 70,
+                   origin: { y: 0.6 }
+               });
+           });
+       }
+       
        if (bossBattleActive) {
-           const allCorrect = newResults.every(r => r.isCorrect);
            if (allCorrect) {
                const userRef = doc(db, 'users', user.uid);
                getDoc(userRef).then(uDoc => {
@@ -518,7 +530,12 @@ export const Quizzes: React.FC = () => {
           )}
 
           {quizData && !quizLoading && (
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm p-6 overflow-hidden relative">
+            <motion.div 
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, ease: "easeOut" }}
+               className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm p-6 overflow-hidden relative"
+            >
               <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600" />
               
               <div className="flex justify-between items-center mb-6 mt-2">
@@ -538,9 +555,9 @@ export const Quizzes: React.FC = () => {
 
               {!quizFinished ? (
                  <>
-                    <p className="text-neutral-700 dark:text-neutral-300 text-sm mb-8 leading-relaxed font-medium">
-                       {quizData[currentQuestionIdx].question}
-                    </p>
+                    <div className="text-neutral-700 dark:text-neutral-300 text-sm mb-8 leading-relaxed font-medium">
+                       <MarkdownRenderer content={quizData[currentQuestionIdx].question} />
+                    </div>
 
                     <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
                       {quizData[currentQuestionIdx].options.map((opt, i) => {
@@ -625,7 +642,7 @@ export const Quizzes: React.FC = () => {
                     </button>
                  </div>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       )}
@@ -743,9 +760,9 @@ export const Quizzes: React.FC = () => {
           }).map(log => (
             <div key={log.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-5 shadow-sm">
               <div className="flex items-start justify-between gap-4 mb-3">
-                <h3 className="font-medium text-sm text-neutral-900 dark:text-neutral-200 leading-relaxed max-w-[85%]">
-                  {log.question}
-                </h3>
+                <div className="font-medium text-sm text-neutral-900 dark:text-neutral-200 leading-relaxed max-w-[85%]">
+                  <MarkdownRenderer content={log.question} />
+                </div>
                 <div className="flex shrink-0 mt-0.5">
                   {log.isCorrect ? (
                     <div className="p-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 rounded-lg">
@@ -778,7 +795,7 @@ export const Quizzes: React.FC = () => {
                 {log.explanation ? (
                     <div className="bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700/50">
                         <span className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-widest font-bold block mb-1">Explanation</span>
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300">{log.explanation}</p>
+                        <div className="text-sm text-neutral-700 dark:text-neutral-300"><MarkdownRenderer content={log.explanation} /></div>
                     </div>
                 ) : (
                     <div className="flex items-center justify-between">
@@ -813,9 +830,9 @@ export const Quizzes: React.FC = () => {
            logs.filter(log => !log.isCorrect).map(log => (
              <div key={log.id} className="bg-white dark:bg-neutral-900 border border-rose-200 dark:border-rose-900/50 rounded-xl p-5 shadow-sm">
                <div className="flex items-start justify-between gap-4 mb-3">
-                 <h3 className="font-medium text-sm text-neutral-900 dark:text-neutral-200 leading-relaxed max-w-[85%]">
-                   {log.question}
-                 </h3>
+                 <div className="font-medium text-sm text-neutral-900 dark:text-neutral-200 leading-relaxed max-w-[85%]">
+                   <MarkdownRenderer content={log.question} />
+                 </div>
                  <div className="flex shrink-0 mt-0.5">
                    <div className="p-1.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-500 rounded-lg">
                      <XCircle className="w-4 h-4" />
@@ -840,7 +857,7 @@ export const Quizzes: React.FC = () => {
                   {log.explanation ? (
                       <div className="bg-rose-50 dark:bg-rose-900/10 p-3 rounded-lg border border-rose-100 dark:border-rose-900/30">
                           <span className="text-xs text-rose-500 dark:text-rose-400 uppercase tracking-widest font-bold block mb-1">AI Explanation</span>
-                          <p className="text-sm text-rose-800 dark:text-rose-200 opacity-90">{log.explanation}</p>
+                          <div className="text-sm text-rose-800 dark:text-rose-200 opacity-90"><MarkdownRenderer content={log.explanation} /></div>
                       </div>
                   ) : (
                       <div className="flex items-center justify-between">

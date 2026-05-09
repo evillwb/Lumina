@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { summarizeStudyNotes, answerFollowUpQuestion, generateTopicImage } from '../services/geminiService';
 import { Sparkles, Loader2, FileText, Tag, List, Upload, X, Save, Image as ImageIcon, MessageSquare, Send, User } from 'lucide-react';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { useTranslation } from '../locales/i18n';
 import { useAuth } from '../contexts/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -279,8 +280,8 @@ export const SmartNotes: React.FC = () => {
                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-sm font-bold mt-0.5">
                              {index + 1}
                            </span>
-                           <span className="text-neutral-700 dark:text-neutral-300 leading-relaxed text-base">
-                             {point}
+                           <span className="text-neutral-700 dark:text-neutral-300 leading-relaxed text-base min-w-0 flex-1">
+                             <MarkdownRenderer content={point} />
                            </span>
                         </li>
                       ))}
@@ -344,7 +345,7 @@ export const SmartNotes: React.FC = () => {
                               ? 'bg-indigo-600 text-white rounded-tr-none' 
                               : 'bg-neutral-100 dark:bg-neutral-800/80 text-neutral-800 dark:text-neutral-200 rounded-tl-none leading-relaxed border border-neutral-200 dark:border-neutral-700/50' 
                           }`}>
-                            {msg.text}
+                            <MarkdownRenderer content={msg.text} />
                           </div>
                           {msg.timestamp && (
                             <span className="text-[10px] text-neutral-400 mt-1.5 px-1 font-medium">
