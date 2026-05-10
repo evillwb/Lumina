@@ -63,6 +63,13 @@ export const SmartNotes: React.FC = () => {
 
   const handleSummarize = async () => {
     if (!inputText.trim() && files.length === 0) return;
+    
+    // Prevent huge text from crashing the API and eating budget
+    if (inputText.length > 50000) {
+      alert("Input text is too long. Please summarize it in smaller chunks.");
+      return;
+    }
+
     setIsSummarizing(true);
     setResults(null);
     setGeneratedImage(null);
@@ -146,7 +153,7 @@ export const SmartNotes: React.FC = () => {
     setIsSaving(true);
 
     const topicId = uuidv4();
-    const formattedNotes = `### Summary\n\n${results.summaryBulletPoints.map((b) => `- ${b}`).join("\n")}\n\n### Key Terms\n\n${results.keyTerms.join(", ")}`;
+    const formattedNotes = `### Summary\n\n${(results.summaryBulletPoints || []).map((b) => `- ${b}`).join("\n")}\n\n### Key Terms\n\n${(results.keyTerms || []).join(", ")}`;
 
     try {
       await setDoc(doc(db, "users", user.uid, "topics", topicId), {
@@ -368,8 +375,8 @@ export const SmartNotes: React.FC = () => {
                     </h3>
                   </div>
                   <ul className="space-y-4">
-                    {results.summaryBulletPoints.map((point, index) => (
-                      <li key={index} className="flex gap-4">
+                    {(results.summaryBulletPoints || []).map((point, index) => (
+                      <li key={`summary-${index}`} className="flex gap-4">
                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-sm font-bold mt-0.5">
                           {index + 1}
                         </span>
@@ -389,9 +396,9 @@ export const SmartNotes: React.FC = () => {
                     </h3>
                   </div>
                   <div className="flex flex-wrap gap-2.5">
-                    {results.keyTerms.map((term, index) => (
+                    {(results.keyTerms || []).map((term, index) => (
                       <span
-                        key={index}
+                        key={`term-${index}`}
                         className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 rounded-xl font-medium text-sm shadow-sm"
                       >
                         {term}
@@ -433,9 +440,9 @@ export const SmartNotes: React.FC = () => {
                       Have a question about this topic? Ask below!
                     </p>
                   )}
-                  {chatHistory.map((msg, idx) => (
+                  {(chatHistory || []).map((msg, idx) => (
                     <div
-                      key={idx}
+                      key={`chat-${idx}`}
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       {msg.role === "ai" && (

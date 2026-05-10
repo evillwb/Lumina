@@ -85,8 +85,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return;
     }
 
+    let unsubscribe: (() => void) | undefined;
+
     import("firebase/firestore").then(({ onSnapshot }) => {
-      const unsubscribe = onSnapshot(doc(db, "users", user.uid), async (d) => {
+      unsubscribe = onSnapshot(doc(db, "users", user.uid), async (d) => {
         if (d.exists()) {
           const data = d.data() as UserProfile;
           const tz =
@@ -175,11 +177,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }
         }
       });
-      // The local var isn't easy to clean up here if we async load the module inside useEffect
-      // so we will just let it run or rely on component unmount standard practices.
-      // A better way is:
-      return () => unsubscribe();
     });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user]);
 
   // Local effect for real-time visual decay minute-by-minute
