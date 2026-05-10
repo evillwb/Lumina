@@ -303,13 +303,19 @@ export const generateLessonPlan = async (
   }`;
 
   try {
-    const response = await getAIClient().models.generateContent({
+    const fetchPromise = getAIClient().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{ text: prompt }],
       config: {
         responseMimeType: "application/json",
       },
     });
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("API Timeout - Gemini took longer than 10 seconds")), 10000);
+    });
+
+    const response = await Promise.race([fetchPromise, timeoutPromise]);
 
     const { text } = response as any;
     if (!text) throw new Error("No text returned from Gemini");
@@ -327,6 +333,7 @@ export const generateLessonPlan = async (
     }
   } catch (error) {
     console.error("Error generating lesson plan:", error);
+    alert("Failed to generate lesson plan. Please check your connection or try again later.");
     throw error;
   }
 };

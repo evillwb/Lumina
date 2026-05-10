@@ -58,6 +58,8 @@ export const SyllabusManager: React.FC = () => {
   const [quizDifficulty, setQuizDifficulty] = useState<Topic["quizDifficulty"]>("Medium");
   const [isGeneratingNotes, setIsGeneratingNotes] = useState(false);
   const [generatingLessonPlanForId, setGeneratingLessonPlanForId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingSchedule, setIsGeneratingSchedule] = useState(false);
 
   const generateNotes = async () => {
     if (!title.trim()) {
@@ -140,7 +142,15 @@ export const SyllabusManager: React.FC = () => {
   };
 
   const saveTopic = async () => {
-    if (!user || !title.trim()) return;
+    if (!user || !title.trim() || isSaving) return;
+    
+    // Prevent 10,000+ characters from crashing DB
+    if (notes.length > 50000) {
+      alert("Notes are too long (max 50,000 characters). Please condense them.");
+      return;
+    }
+
+    setIsSaving(true);
     try {
       const isNew = !isEditing;
       const topicId = isEditing || uuidv4();
@@ -177,16 +187,21 @@ export const SyllabusManager: React.FC = () => {
       fetchTopics();
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, "topics");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const deleteTopic = async (id: string) => {
     if (!user) return;
+    setIsSaving(true); // Re-using isSaving for delete action overlay
     try {
       await deleteDoc(doc(db, "users", user.uid, "topics", id));
       setTopics(topics.filter((t) => t.id !== id));
     } catch (e) {
       handleFirestoreError(e, OperationType.DELETE, `topics/${id}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -212,7 +227,9 @@ export const SyllabusManager: React.FC = () => {
 
   const generateSchedule = async () => {
     if (!user || topics.length === 0) return alert("Add topics first!");
+    if (isGeneratingSchedule) return;
 
+    setIsGeneratingSchedule(true);
     try {
       const batchRef = collection(db, "users", user.uid, "scheduleBlocks");
       const oldBlocks = await getDocs(batchRef);
@@ -282,6 +299,8 @@ export const SyllabusManager: React.FC = () => {
       alert("Calendar generated successfully!");
     } catch (e) {
       handleFirestoreError(e, OperationType.WRITE, "scheduleBlocks");
+    } finally {
+      setIsGeneratingSchedule(false);
     }
   };
 
@@ -289,8 +308,8 @@ export const SyllabusManager: React.FC = () => {
 
   const filteredTopics = topics.filter((t) => {
     const searchMatch =
-      t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (t.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const priorityMatch =
@@ -325,10 +344,15 @@ export const SyllabusManager: React.FC = () => {
         </div>
         <button
           onClick={generateSchedule}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20"
+          disabled={isGeneratingSchedule}
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20"
         >
-          <CalendarPlus className="w-4 h-4" />
-          Regenerate Schedule
+          {isGeneratingSchedule ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CalendarPlus className="w-4 h-4" />
+          )}
+          {isGeneratingSchedule ? "Generating..." : "Regenerate Schedule"}
         </button>
       </header>
 
@@ -491,15 +515,17 @@ export const SyllabusManager: React.FC = () => {
           )}
           <button
             onClick={saveTopic}
-            disabled={!title.trim()}
+            disabled={!title.trim() || isSaving}
             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
           >
-            {isEditing ? (
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isEditing ? (
               <Check className="w-4 h-4" />
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            {isEditing ? "Save Topic" : "Add Topic"}
+            {isSaving ? "Saving..." : isEditing ? "Save Topic" : "Add Topic"}
           </button>
         </div>
       </div>
@@ -527,9 +553,10 @@ export const SyllabusManager: React.FC = () => {
                   deleteTopic(topicToDelete);
                   setTopicToDelete(null);
                 }}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium text-sm transition-colors"
+                disabled={isSaving}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50"
               >
-                Delete
+                {isSaving ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -654,24 +681,24 @@ export const SyllabusManager: React.FC = () => {
                   <div>
                     <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Objectives</h5>
                     <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
-                      {t.lessonPlan.learningObjectives.map((obj, i) => (
-                        <li key={i}>{obj}</li>
+                      {(t.lessonPlan.learningObjectives || []).map((obj, i) => (
+                        <li key={`obj-${i}`}>{obj}</li>
                       ))}
                     </ul>
                   </div>
                   <div>
                     <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Key Activities</h5>
                     <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
-                      {t.lessonPlan.keyActivities.map((act, i) => (
-                        <li key={i}>{act}</li>
+                      {(t.lessonPlan.keyActivities || []).map((act, i) => (
+                        <li key={`act-${i}`}>{act}</li>
                       ))}
                     </ul>
                   </div>
                   <div>
                     <h5 className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest mb-1.5">Assessment</h5>
                     <ul className="list-disc list-outside ml-3 text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
-                      {t.lessonPlan.assessmentMethods.map((asm, i) => (
-                        <li key={i}>{asm}</li>
+                      {(t.lessonPlan.assessmentMethods || []).map((asm, i) => (
+                        <li key={`asm-${i}`}>{asm}</li>
                       ))}
                     </ul>
                   </div>
