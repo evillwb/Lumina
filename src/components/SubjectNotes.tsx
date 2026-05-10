@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { db, handleFirestoreError, OperationType } from "../lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  orderBy,
-} from "firebase/firestore";
-import { Plus, Clock, FileText, Check, Download } from "lucide-react";
+import { Plus, FileText, Check, Download } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useTranslation } from "../locales/i18n";
 import { motion, AnimatePresence } from "motion/react";
